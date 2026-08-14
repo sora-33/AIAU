@@ -6,6 +6,7 @@
 
 | ドキュメント | 内容 |
 | --- | --- |
+| [SPEC.md](SPEC.md) | プロダクト仕様（ドラフト） |
 | [BRANCHING.md](BRANCHING.md) | ブランチ戦略・命名規則・コミット規約 |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | 開発の進め方・PR の出し方 |
 | [.github/pull_request_template.md](.github/pull_request_template.md) | PR テンプレート |
