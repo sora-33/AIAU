@@ -190,6 +190,18 @@
     return chip;
   }
 
+  function normalizeMentionToken(token) {
+    return token.replace(/[、。！？,.!?;；:：…]+$/u, "");
+  }
+
+  function resolveMention(token, mentions) {
+    const normalizedToken = normalizeMentionToken(token);
+    return (mentions || [])
+      .map((mention) => ({ mention, label: mentionLabel(mention) }))
+      .filter(({ label }) => label && label.startsWith(normalizedToken))
+      .sort((left, right) => right.label.length - left.label.length)[0] || null;
+  }
+
   function renderBubble(message) {
     const bubble = document.createElement("div");
     bubble.className = "message-bubble";
@@ -198,15 +210,21 @@
       bubble.textContent = "送信を取り消しました";
       return bubble;
     }
-    const mentionMap = new Map((message.mentions || []).map((mention) => [mentionLabel(mention), mention]));
-    const pattern = /([#@][^\s#@]+)/g;
+    const pattern = /([#@][^\s#@、。！？,.!?;；:：…]+)/gu;
     let cursor = 0;
     let match;
     while ((match = pattern.exec(message.text)) !== null) {
       if (match.index > cursor) bubble.appendChild(document.createTextNode(message.text.slice(cursor, match.index)));
-      const mention = mentionMap.get(match[1]);
-      if (mention) bubble.appendChild(createMentionChip(mention, match[1]));
-      else bubble.appendChild(document.createTextNode(match[1]));
+      const resolved = resolveMention(match[1], message.mentions);
+      const normalizedToken = normalizeMentionToken(match[1]);
+      if (resolved) {
+        bubble.appendChild(createMentionChip(resolved.mention, normalizedToken));
+        if (normalizedToken.length < match[1].length) {
+          bubble.appendChild(document.createTextNode(match[1].slice(normalizedToken.length)));
+        }
+      } else {
+        bubble.appendChild(document.createTextNode(match[1]));
+      }
       cursor = match.index + match[1].length;
     }
     if (cursor < message.text.length) bubble.appendChild(document.createTextNode(message.text.slice(cursor)));
@@ -396,12 +414,20 @@
     const text = chatInput.value.trim();
     if (!text) return;
     const mentions = [];
-    data.notes.forEach((note) => {
-      if (text.includes(`#${note.title}`)) mentions.push({ type: "note", id: note.id });
-    });
-    (data.trip.members || []).forEach((member) => {
-      if (text.includes(`@${member.name}`)) mentions.push({ type: "user", id: member.id });
-    });
+    const mentionDefinitions = [
+      ...data.notes.map((note) => ({ type: "note", id: note.id })),
+      ...(data.trip.members || []).map((member) => ({ type: "user", id: member.id }))
+    ];
+    const seenMentions = new Set();
+    for (const match of text.matchAll(/([#@][^\s#@、。！？,.!?;；:：…]+)/gu)) {
+      const resolved = resolveMention(match[1], mentionDefinitions);
+      if (!resolved) continue;
+      const key = `${resolved.mention.type}:${resolved.mention.id}`;
+      if (!seenMentions.has(key)) {
+        mentions.push(resolved.mention);
+        seenMentions.add(key);
+      }
+    }
     messages.push({
       id: `message-${Date.now()}`,
       author: currentUser.name,
