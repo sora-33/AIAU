@@ -248,7 +248,7 @@ button { cursor: pointer; }
 .schedule-note { display: inline-block; margin-top: 7px; color: var(--teal-dark); font-size: 10px; text-decoration: underline; }
 .schedule-origin { display: inline-block; margin-bottom: 4px; color: var(--teal-dark); font-size: 9px; font-weight: 800; }
 .schedule-reason { display: block; margin-top: 7px; color: var(--teal-dark); font-size: 9px; line-height: 1.4; }
-.schedule-popover { position: absolute; z-index: 4; max-width: calc(100% - 16px); max-height: calc(100% - 16px); overflow: auto; padding: 11px 30px 10px 12px; border: 1px solid #b9dcd6; border-radius: 8px; background: #fff; box-shadow: 0 8px 18px rgba(36,52,71,.18); }
+.schedule-popover { position: absolute; z-index: 4; max-width: calc(100% - 16px); padding: 11px 30px 10px 12px; border: 1px solid #b9dcd6; border-radius: 8px; background: #fff; box-shadow: 0 8px 18px rgba(36,52,71,.18); }
 .schedule-popover-kind { display: inline-block; margin-bottom: 5px; padding: 3px 6px; border-radius: 4px; color: var(--muted); background: #eef2f3; font-size: 9px; font-weight: 800; }
 .schedule-popover-kind.conflict { color: var(--purple); background: #f0eafa; }
 .schedule-popover-kind.ai { color: var(--teal-dark); background: #e7f5f2; }

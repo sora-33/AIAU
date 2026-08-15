@@ -69,8 +69,9 @@
 
   function showPopover(block, plan) {
     closePopover();
-    const track = block.closest(".time-track");
-    if (!track) return;
+    if (!block.classList.contains("narrow")) return;
+    const layout = block.closest(".timeline-layout");
+    if (!layout) return;
 
     const popover = document.createElement("div");
     popover.className = "schedule-popover";
@@ -114,17 +115,21 @@
     close.addEventListener("click", closePopover);
     popover.appendChild(close);
 
-    track.appendChild(popover);
-    const trackWidth = track.clientWidth;
-    const popoverWidth = Math.min(260, Math.max(180, trackWidth - 16));
+    layout.appendChild(popover);
+    const layoutRect = layout.getBoundingClientRect();
+    const blockRect = block.getBoundingClientRect();
+    const popoverWidth = Math.min(260, Math.max(180, layoutRect.width - 16));
     popover.style.width = `${popoverWidth}px`;
-    const left = Math.min(Math.max(8, block.offsetLeft), trackWidth - popoverWidth - 8);
+    const left = Math.min(
+      Math.max(8, blockRect.left - layoutRect.left),
+      layoutRect.width - popoverWidth - 8
+    );
     const popoverHeight = popover.offsetHeight;
-    const belowTop = block.offsetTop + block.offsetHeight + 8;
-    const aboveTop = block.offsetTop - popoverHeight - 8;
-    const top = belowTop + popoverHeight <= track.clientHeight - 8
+    const belowTop = blockRect.bottom - layoutRect.top + 8;
+    const aboveTop = blockRect.top - layoutRect.top - popoverHeight - 8;
+    const top = blockRect.bottom + popoverHeight + 8 <= window.innerHeight
       ? belowTop
-      : Math.max(8, aboveTop);
+      : aboveTop;
     popover.style.left = `${left}px`;
     popover.style.top = `${top}px`;
     block.setAttribute("aria-expanded", "true");
@@ -145,8 +150,6 @@
     block.className = classes.join(" ");
     block.dataset.planId = plan.id;
     block.title = plan.title;
-    block.tabIndex = 0;
-    block.setAttribute("aria-expanded", "false");
     const position = getTimelinePosition(plan);
     block.style.left = position[0];
     block.style.width = position[1];
@@ -191,20 +194,24 @@
       reason.textContent = `AIが提案した理由：${plan.aiReason}`;
       block.appendChild(reason);
     }
-    block.addEventListener("mouseenter", () => showPopover(block, plan));
-    block.addEventListener("focus", () => showPopover(block, plan));
-    block.addEventListener("click", (event) => {
-      if (event.target.closest("a")) return;
-      showPopover(block, plan);
-    });
-    block.addEventListener("keydown", (event) => {
-      if (event.key === "Enter" || event.key === " ") {
-        event.preventDefault();
+    if (duration <= 30) {
+      block.tabIndex = 0;
+      block.setAttribute("aria-expanded", "false");
+      block.addEventListener("mouseenter", () => showPopover(block, plan));
+      block.addEventListener("focus", () => showPopover(block, plan));
+      block.addEventListener("click", (event) => {
+        if (event.target.closest("a")) return;
         showPopover(block, plan);
-      } else if (event.key === "Escape") {
-        closePopover();
-      }
-    });
+      });
+      block.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          showPopover(block, plan);
+        } else if (event.key === "Escape") {
+          closePopover();
+        }
+      });
+    }
     return block;
   }
 
