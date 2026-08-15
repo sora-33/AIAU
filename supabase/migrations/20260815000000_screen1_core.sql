@@ -115,6 +115,11 @@ grant select, insert, update on messages to authenticated;    -- 削除は論理
 grant select, insert, update, delete on notes to authenticated;
 grant select on note_operations to authenticated;             -- 書き込みは RPC のみ
 
+-- Edge Functions（service role）は RLS を迂回するが、テーブル権限は必要
+grant select, insert, update, delete
+  on trips, trip_members, trip_invites, messages, notes, note_operations
+  to service_role;
+
 -- ---------------------------------------------------------------------------
 -- RLS（backend-supabase-plan.md 7.3 のマトリクスに従う）
 -- 所属判定は SECURITY DEFINER helper に集約し、RLS の再帰を避ける

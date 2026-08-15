@@ -1,5 +1,6 @@
 import { useRef } from 'react'
-import { Bot, MoreVertical, User } from 'lucide-react'
+import { Bot, MoreVertical, Undo2, User } from 'lucide-react'
+import { toast } from 'sonner'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,6 +18,7 @@ export function NoteCard({ note, onEdit }: { note: Note; onEdit: (note: Note) =>
   const persistNotePosition = useTripStore((s) => s.persistNotePosition)
   const updateNote = useTripStore((s) => s.updateNote)
   const deleteNote = useTripStore((s) => s.deleteNote)
+  const undoLastAiOperation = useTripStore((s) => s.undoLastAiOperation)
   const dragging = useRef(false)
   const lastSent = useRef(0)
 
@@ -87,6 +89,19 @@ export function NoteCard({ note, onEdit }: { note: Note; onEdit: (note: Note) =>
             >
               {held ? '保留を解除' : '保留にする'}
             </DropdownMenuItem>
+            {note.origin === 'ai' && (
+              <DropdownMenuItem
+                onClick={async () => {
+                  const reverted = await undoLastAiOperation(note.id)
+                  toast[reverted ? 'success' : 'info'](
+                    reverted ? 'AI の操作を取り消しました' : '取り消せる AI 操作がありません',
+                  )
+                }}
+              >
+                <Undo2 className="size-3.5" />
+                AI の操作を取り消す
+              </DropdownMenuItem>
+            )}
             <DropdownMenuItem className="text-red-600" onClick={() => deleteNote(note.id)}>
               削除
             </DropdownMenuItem>

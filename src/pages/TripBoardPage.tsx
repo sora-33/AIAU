@@ -13,6 +13,7 @@ export function TripBoardPage() {
   const trip = useTripStore((s) => s.trip)
   const status = useTripStore((s) => s.status)
   const error = useTripStore((s) => s.error)
+  const aiStatus = useTripStore((s) => s.aiStatus)
   const enter = useTripStore((s) => s.enter)
   const leave = useTripStore((s) => s.leave)
   const [myUserId, setMyUserId] = useState('')
@@ -57,6 +58,12 @@ export function TripBoardPage() {
         <h1 className="flex-1 truncate text-sm font-bold">
           {status === 'loading' ? '読み込み中…' : (trip?.title ?? '')}
         </h1>
+        {aiStatus === 'running' && (
+          <span className="animate-pulse text-xs text-blue-600">AI 整理中…</span>
+        )}
+        {aiStatus === 'failed' && (
+          <span className="text-xs text-red-500">AI 整理に失敗（手動操作は可能）</span>
+        )}
         <Button size="sm" variant="outline" onClick={copyInviteUrl}>
           <Link2 className="size-4" />
           招待 URL

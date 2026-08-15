@@ -5,6 +5,9 @@ import type { Message, Note, Trip, TripMember } from '@/types'
 
 type Status = 'idle' | 'loading' | 'ready' | 'error'
 
+const EXTRACT_DEBOUNCE_MS = 2500
+let extractTimer: ReturnType<typeof setTimeout> | null = null
+
 type TripState = {
   tripId: string | null
   trip: Trip | null
@@ -14,6 +17,7 @@ type TripState = {
   status: Status
   error: string | null
   channel: RealtimeChannel | null
+  aiStatus: 'idle' | 'running' | 'failed'
 
   enter: (tripId: string) => Promise<void>
   leave: () => void
@@ -25,6 +29,8 @@ type TripState = {
   moveNoteLocal: (id: string, x: number, y: number) => void
   broadcastMove: (id: string, x: number, y: number) => void
   persistNotePosition: (id: string) => Promise<void>
+  scheduleExtract: () => void
+  undoLastAiOperation: (noteId: string) => Promise<boolean>
 }
 
 function upsertById<T extends { id: string }>(list: T[], row: T): T[] {
@@ -44,6 +50,7 @@ export const useTripStore = create<TripState>((set, get) => ({
   status: 'idle',
   error: null,
   channel: null,
+  aiStatus: 'idle',
 
   async enter(tripId) {
     // 旅行切替時に旧 channel を解除し、状態を初期化する（S1-04 データ分離）
@@ -110,6 +117,7 @@ export const useTripStore = create<TripState>((set, get) => ({
   leave() {
     const { channel } = get()
     if (channel) supabase.removeChannel(channel)
+    if (extractTimer) clearTimeout(extractTimer)
     set({
       tripId: null,
       trip: null,
@@ -119,6 +127,7 @@ export const useTripStore = create<TripState>((set, get) => ({
       status: 'idle',
       error: null,
       channel: null,
+      aiStatus: 'idle',
     })
   },
 
@@ -132,6 +141,8 @@ export const useTripStore = create<TripState>((set, get) => ({
       .from('messages')
       .insert({ trip_id: tripId, author_id: uid, author_name: nickname, text })
     if (error) throw error
+    // 最終発言から一定時間後に AI 抽出を起動する（S1-11 デバウンス）
+    get().scheduleExtract()
   },
 
   async softDeleteMessage(id) {
@@ -183,5 +194,42 @@ export const useTripStore = create<TripState>((set, get) => ({
     const note = get().notes[id]
     if (!note) return
     await get().updateNote(id, { x: note.x, y: note.y })
+  },
+
+  scheduleExtract() {
+    if (extractTimer) clearTimeout(extractTimer)
+    extractTimer = setTimeout(async () => {
+      const { tripId } = get()
+      if (!tripId) return
+      set({ aiStatus: 'running' })
+      const { data, error } = await supabase.functions.invoke('extract-notes', {
+        body: { trip_id: tripId },
+      })
+      // 失敗してもチャット・手動付箋は影響を受けない（S1-16 フォールバック）
+      set({ aiStatus: error ? 'failed' : 'idle' })
+      if (!error && (data?.applied ?? 0) > 0) {
+        // 付箋自体は Realtime (postgres_changes) で反映される
+        console.info(`AI 整理: ${data.applied} 件適用 (${data.provider})`)
+      }
+    }, EXTRACT_DEBOUNCE_MS)
+  },
+
+  async undoLastAiOperation(noteId) {
+    const { data, error } = await supabase.rpc('undo_last_note_operation', {
+      p_note_id: noteId,
+    })
+    if (error) throw error
+    if (data) {
+      // add の取り消しで削除された場合に備えてローカルからも消す（Realtime でも同期される）
+      const stillExists = await supabase.from('notes').select('id').eq('id', noteId).maybeSingle()
+      if (!stillExists.data) {
+        set((s) => {
+          const notes = { ...s.notes }
+          delete notes[noteId]
+          return { notes }
+        })
+      }
+    }
+    return data as boolean
   },
 }))
