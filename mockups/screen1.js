@@ -112,7 +112,6 @@
         placeholder.replaceWith(card);
         placeholder = null;
       }
-      card.style.display = "";
       card.classList.remove("dragging");
       list.querySelectorAll(".drop-target").forEach((item) => item.classList.remove("drop-target"));
       card.dataset.dragging = "false";
@@ -125,7 +124,6 @@
       placeholder.className = "note-drop-placeholder";
       placeholder.style.height = `${card.offsetHeight}px`;
       list.insertBefore(placeholder, card);
-      card.style.display = "none";
       card.dataset.dragging = "true";
       card.classList.add("dragging");
       document.addEventListener("pointermove", moveDrag);

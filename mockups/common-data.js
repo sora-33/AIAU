@@ -332,16 +332,16 @@ window.AIAU_DATA = {
     },
     {
       id: "plan-ai-lunch-gap",
-      title: "上野公園でひと休み",
-      time: "12:00–12:15",
-      start: "12:00",
-      end: "12:15",
-      location: "上野公園",
+      title: "根津でひと休み",
+      time: "14:00–14:15",
+      start: "14:00",
+      end: "14:15",
+      location: "根津",
       type: "suggestion",
       status: "suggested",
       origin: "ai",
       proposalType: "gap",
-      aiReason: "美術館の終了から昼食候補の開始まで、15分の余裕があります。"
+      aiReason: "古書店カフェの終了から午後の候補開始まで、15分の余裕があります。"
     },
     {
       id: "plan-ai-evening-transfer",
@@ -432,7 +432,7 @@ window.AIAU_DATA = {
       detail: "画面2で投票中の候補があります。",
       color: "dashed",
       top: 219,
-      height: 68,
+      height: 70,
       left: "18px",
       right: "58%",
       planId: "plan-lunch-option"

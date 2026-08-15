@@ -37,13 +37,14 @@
     return (plan.votes || 0) + (voteAdjustments[plan.id] || 0);
   }
 
+  function parseTime(value) {
+    const [hours, minutes] = value.split(":").map(Number);
+    return hours * 60 + minutes;
+  }
+
   function getTimelinePosition(plan) {
     const timelineStart = 9 * 60;
     const timelineEnd = 18 * 60;
-    const parseTime = (value) => {
-      const [hours, minutes] = value.split(":").map(Number);
-      return hours * 60 + minutes;
-    };
     const start = Math.max(parseTime(plan.start), timelineStart);
     const end = Math.min(parseTime(plan.end), timelineEnd);
     const total = timelineEnd - timelineStart;
@@ -58,10 +59,12 @@
       "schedule-block",
       plan.type === "option" ? "option" : plan.status === "draft" ? "draft" : "",
       plan.proposalType === "gap" ? "ai-suggestion" : "",
+      parseTime(plan.end) - parseTime(plan.start) <= 90 ? "compact" : "",
       options.rejected ? "rejected" : ""
     ].filter(Boolean);
     block.className = classes.join(" ");
     block.dataset.planId = plan.id;
+    block.title = plan.title;
     const position = getTimelinePosition(plan);
     block.style.left = position[0];
     block.style.width = position[1];
