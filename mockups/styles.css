@@ -20,7 +20,7 @@
 }
 
 * { box-sizing: border-box; }
-html, body { max-width: 100%; overflow-x: hidden; }
+html, body { width: 100%; max-width: 100%; }
 body { margin: 0; min-width: 320px; background: var(--canvas); }
 a { color: inherit; }
 button, input, textarea { font: inherit; }
@@ -77,7 +77,7 @@ button { cursor: pointer; }
   display: block; min-height: 30px; padding: 7px 16px;
   width: 100%; max-width: 100%; color: #6b6670; background: #fffaf0; border-bottom: 1px solid #f4e5bd; font-size: 11px; line-height: 1.4; text-align: center; overflow-wrap: anywhere;
 }
-.mock-note span { display: block; max-width: 100%; overflow-wrap: anywhere; word-break: break-all; }
+.mock-note span { display: block; width: 100%; max-width: 100%; white-space: normal; overflow-wrap: anywhere; word-break: break-all; }
 .page-shell { width: 100%; max-width: 1440px; min-width: 0; margin: 0 auto; padding: 26px 32px 40px; }
 .page-title { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 22px; }
 .page-title h1 { margin: 5px 0 0; font-size: 25px; letter-spacing: -.02em; }
@@ -302,11 +302,13 @@ dialog::backdrop { background: rgba(36,52,71,.36); }
 }
 @media (max-width: 640px) {
   .app-header { height: auto; min-height: 64px; flex-wrap: wrap; padding: 12px 16px 0; gap: 10px; }
+  .brand { order: 1; flex: 1 1 auto; }
   .brand-name { font-size: 16px; }
   .trip-switcher { order: 4; width: 100%; padding: 7px 0 11px; border-top: 1px solid var(--line); }
-  .main-nav { order: 3; flex: 0 0 calc(100% - 32px); width: calc(100% - 32px); margin-left: 0; overflow: hidden; }
+  .main-nav { order: 3; flex: 0 0 100%; width: 100%; margin-left: 0; }
   .main-nav a { flex: 1 1 0; justify-content: center; padding: 0 4px; font-size: 10px; }
-  .header-actions { display: none; }
+  .header-actions { order: 2; display: flex; gap: 7px; margin-left: auto; }
+  .header-actions .icon-button { display: none; }
   .page-shell { padding: 19px 12px 28px; }
   .page-title { display: block; margin-bottom: 16px; }
   .page-title h1 { font-size: 21px; }
