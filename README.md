@@ -7,6 +7,8 @@
 | ドキュメント | 内容 |
 | --- | --- |
 | [docs/requirements.md](docs/requirements.md) | 機能要件（3 画面の仕様） |
+| [mockups/](mockups/) | 3 画面の静的 UI モックアップ（画面遷移・操作デモ） |
+| [docs/screen1-requirements.md](docs/screen1-requirements.md) | 画面 1（アイデアボード + チャット）の詳細要件 |
 | [docs/screen3-calendar.md](docs/screen3-calendar.md) | 画面 3（カレンダー）機能要件の決定記録 |
 | [BRANCHING.md](BRANCHING.md) | ブランチ戦略・命名規則・コミット規約 |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | 開発の進め方・PR の出し方 |
