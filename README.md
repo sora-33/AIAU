@@ -35,6 +35,28 @@ npm run dev
 
 技術選定の詳細と理由は [docs/tech-stack.md](docs/tech-stack.md) を参照。
 
+## ローカル開発（Supabase）
+
+Docker が起動している状態で:
+
+```bash
+brew install supabase/tap/supabase   # 初回のみ
+
+supabase start        # ローカルスタック起動（初回はイメージ取得で数分）
+                      # 出力される Project URL / Publishable key を .env.local へ
+
+# Edge Functions（AI 抽出）を使う場合
+cp supabase/functions/.env.example supabase/functions/.env
+# LLM_PROVIDER=mock なら API キー不要。openai にする場合は OPENAI_API_KEY を記入
+supabase functions serve --env-file supabase/functions/.env
+```
+
+| コマンド | 内容 |
+| --- | --- |
+| `supabase db reset` | マイグレーションを最初から適用し直す（ローカル DB は消える） |
+| `node scripts/supabase-smoke.mjs` | 接続確認（匿名 Auth / RPC / RLS / AI 抽出、全 18 項目） |
+| `node scripts/llm-fixtures.mjs` | LLM 抽出器のフィクスチャテスト（6 ケース × 3 回） |
+
 ## 使い方
 
 TBD

@@ -7,7 +7,19 @@
 // LLM が失敗しても DB は変更されない（run 単位でまとめて適用するため）。
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import { extractMock } from './mock.ts'
+import { extractOpenAI } from './openai.ts'
 import type { ExistingNote, IncomingMessage, NoteOperation } from './contract.ts'
+
+async function runExtractor(
+  messages: IncomingMessage[],
+  notes: ExistingNote[],
+): Promise<{ provider: string; operations: NoteOperation[] }> {
+  const provider = Deno.env.get('LLM_PROVIDER') ?? 'mock'
+  if (provider === 'openai') return { provider, operations: await extractOpenAI(messages, notes) }
+  if (provider === 'mock') return { provider, operations: extractMock(messages, notes) }
+  // 未実装 provider は安全側（何もしない）
+  return { provider, operations: [] }
+}
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -41,8 +53,12 @@ Deno.serve(async (req) => {
   const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!
   const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
-  const { trip_id } = (await req.json()) as { trip_id?: string }
-  if (!trip_id) return json({ error: 'INVALID_INPUT' }, 400)
+  const body = (await req.json()) as {
+    trip_id?: string
+    dry_run?: boolean
+    messages?: IncomingMessage[]
+    notes?: ExistingNote[]
+  }
 
   // 呼び出し元 JWT と membership を再検証する（RLS 迂回前の再認可）
   const authHeader = req.headers.get('Authorization') ?? ''
@@ -51,6 +67,19 @@ Deno.serve(async (req) => {
   })
   const { data: userData, error: userError } = await userClient.auth.getUser()
   if (userError || !userData.user) return json({ error: 'AUTH_REQUIRED' }, 401)
+
+  // dry_run: DB に触れず抽出器だけを実行する（LLM フィクスチャテスト用）
+  if (body.dry_run) {
+    try {
+      const { provider, operations } = await runExtractor(body.messages ?? [], body.notes ?? [])
+      return json({ dry_run: true, provider, operations })
+    } catch (e) {
+      return json({ error: String(e) }, 502)
+    }
+  }
+
+  const trip_id = body.trip_id
+  if (!trip_id) return json({ error: 'INVALID_INPUT' }, 400)
 
   const admin = createClient(url, serviceKey)
   const { data: membership, error: memberError } = await admin
@@ -79,24 +108,38 @@ Deno.serve(async (req) => {
     .eq('trip_id', trip_id)
   if (notesError) return json({ error: notesError.message }, 500)
 
-  const provider = Deno.env.get('LLM_PROVIDER') ?? 'mock'
+  // 抽出に失敗した場合は claim を戻し、次のデバウンスで再試行できるようにする
+  // （LLM 失敗で発言が「処理済み」のまま失われるのを防ぐ）
+  const claimedIds = claimed.map((m) => m.id)
+  async function unclaim() {
+    await admin.from('messages').update({ processed: false }).in('id', claimedIds)
+  }
+
+  let provider: string
   let operations: NoteOperation[]
-  if (provider === 'mock') {
-    operations = extractMock(claimed as IncomingMessage[], (notes ?? []) as ExistingNote[])
-  } else {
-    // LLM provider は API キー取得後に実装する。未実装 provider は安全側（何もしない）
-    operations = []
+  try {
+    ;({ provider, operations } = await runExtractor(
+      claimed as IncomingMessage[],
+      (notes ?? []) as ExistingNote[],
+    ))
+  } catch (e) {
+    console.error('extractor failed:', String(e))
+    await unclaim()
+    return json({ error: 'EXTRACTOR_FAILED' }, 502)
   }
 
   const noteIds = new Set((notes ?? []).map((n) => n.id))
   const valid = operations.filter((op) => isValidOperation(op, noteIds))
-  if (valid.length === 0) return json({ applied: 0, skipped: 0, claimed: claimed.length })
+  if (valid.length === 0) return json({ applied: 0, skipped: 0, claimed: claimed.length, provider })
 
   const { data: result, error: applyError } = await admin.rpc('apply_note_operations', {
     p_trip_id: trip_id,
     p_operations: valid,
   })
-  if (applyError) return json({ error: applyError.message }, 500)
+  if (applyError) {
+    await unclaim()
+    return json({ error: applyError.message }, 500)
+  }
 
   return json({ ...result, claimed: claimed.length, provider })
 })
