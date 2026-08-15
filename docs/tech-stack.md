@@ -6,7 +6,7 @@
 
 1. **確定要件に対応するライブラリは、スキャフォールド時点で一括インストールする。** 画面ごとのブランチで並行開発するため、途中で各自が依存を追加すると package-lock.json の競合が頻発する。使わなかったものを外す方が、後から足すより安い
 2. **既製品が存在しない領域は自作し、既製品が要件と 1:1 で一致する領域は採用する。** ボード・タイムラインは前者、カレンダーは後者
-3. **条件付きの項目は採用条件を明記し、条件が満たされるまで入れない。** 例外運用は PWA のみ（後述: 入れるだけで開発を妨げるため）
+3. **条件付きの項目は採用条件を明記し、条件が満たされるまで入れない。**
 
 ## 確定スタック（共通）
 
@@ -23,8 +23,9 @@
 | アイコン | lucide-react | 軽量・tree-shaking 対応 |
 | 日付処理 | date-fns | 週の開始日・期間の重複判定（衝突検知）・履歴の日付グルーピングなど、画面 2・3 で実際の日付演算が発生する |
 | テスト | Vitest | LLM フィクスチャテスト（画面 1 要件 6 章）と操作適用ロジックのユニットテスト。Vite と設定を共有 |
+| PWA | vite-plugin-pwa | 方針 1 に従い最初から導入。**本番ビルドのみ有効**（devOptions 既定値 = dev では SW を登録しないため、開発中のキャッシュ事故は起きない）。`registerType: 'autoUpdate'` で利用者が古いキャッシュに固定されるのを防ぐ。第 2 段階のオフライン閲覧はここに runtime caching を足すだけ |
 | 開発ツール | Supabase CLI | マイグレーション管理 + Edge Functions のローカル実行 |
-| Lint / Format | ESLint + Prettier | Vite テンプレートの既定を維持し、設定に時間を使わない |
+| Lint / Format | oxlint | Vite テンプレートの既定（現行テンプレートは ESLint ではなく oxlint を同梱）を維持し、設定に時間を使わない |
 
 ## 画面別の追加ライブラリ
 
@@ -73,7 +74,7 @@
 
 | 項目 | 採用条件 | 備考 |
 | --- | --- | --- |
-| vite-plugin-pwa | 第 2 段階の「オフライン閲覧」要件が維持された場合 | **一括インストール方針の唯一の例外。** service worker は登録された瞬間から dev 中の資産をキャッシュし、「修正が反映されない」事故を起こすため、条件確定まで入れない |
+| オフライン閲覧の runtime caching | 第 2 段階の「オフライン閲覧」要件が確定した場合 | vite-plugin-pwa 自体は導入済み（確定スタック参照）。データのキャッシュ戦略（何をどこまでオフラインで見せるか）だけを要件確定後に設計する |
 | Google カレンダー双方向同期 | 第 2 段階 | 追加パッケージ不要の見込み。Supabase Auth の Google プロバイダ（calendar scope）+ Edge Functions から REST 呼び出し。googleapis SDK は Deno で重いため使わない |
 | TanStack Query | 履歴一覧・プレビュー等のリクエスト / レスポンス型取得が増えて負担になった場合、その範囲に限定して再検討 | Realtime 中心の状態は「スナップショット + 購読」で zustand に一本化する。Query キャッシュと Realtime の二重管理を避ける |
 
@@ -94,7 +95,9 @@
 
 **認証方式**: 画面 3 の案 C（個人予定・外部カレンダー連携・端末間の連続性）は**匿名 Auth と両立しない**（匿名はブラウザ単位の身元のため）。Google ログインが有力候補 — カレンダー連携に必要な Google OAuth とログインを統合できる。現実的な経路: 画面 1 の開発は匿名 Auth で進め、Supabase が公式サポートする**匿名 → 正式アカウント昇格**で移行する。
 
-## セットアップコマンド
+## セットアップコマンド（記録）
+
+以下はスキャフォールド時に実行済み。開発参加者は README のセットアップ（`npm install`）だけでよい。
 
 ```bash
 npm create vite@latest aiau-app -- --template react-ts
@@ -104,15 +107,17 @@ cd aiau-app
 npm i @supabase/supabase-js react-router-dom zustand zod lucide-react date-fns \
       @fullcalendar/react @fullcalendar/daygrid @fullcalendar/timegrid \
       @fullcalendar/list @fullcalendar/interaction ics
-npm i -D tailwindcss @tailwindcss/vite vitest
+npm i -D tailwindcss @tailwindcss/vite vitest vite-plugin-pwa
 
 # shadcn/ui（4 部品のみ）
 npx shadcn@latest init
 npx shadcn@latest add dialog dropdown-menu sonner button
 
-# Supabase CLI
+# Supabase CLI（Supabase 担当のみ）
 brew install supabase/tap/supabase
 supabase init
 ```
+
+> FullCalendar は react コネクタ含め **v6 系で統一**する（v7 はプラグイン側が RC 段階のため）。
 
 > 認証情報・API キーは `.env.local` で管理し、コミットしない。service role key・LLM API キーは Edge Function のシークレットにのみ置く。
