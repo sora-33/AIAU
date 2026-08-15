@@ -73,8 +73,13 @@
       version.className = `history-version${index === 0 ? " current" : ""}`;
       const head = document.createElement("div");
       head.className = "version-head";
-      head.innerHTML = `<span class="version-id">${item.version} · ${item.date}</span>${index === 0 ? '<span class="current-badge">現在のバージョン</span>' : ""}`;
+      const versionId = item.id || item.version || "v?";
+      head.innerHTML = `<span class="version-id">${versionId} · ${item.date} ${item.time || ""}</span>${index === 0 ? '<span class="current-badge">現在のバージョン</span>' : ""}`;
       version.appendChild(head);
+      const author = document.createElement("p");
+      author.className = "version-author";
+      author.textContent = `変更者：${item.author || "匿名ユーザー"}`;
+      version.appendChild(author);
       const title = document.createElement("h3");
       title.className = "version-title";
       title.textContent = item.title;

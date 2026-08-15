@@ -1,5 +1,4 @@
 (function () {
-  const board = document.getElementById("board-canvas");
   const dialog = document.getElementById("note-dialog");
   const form = document.getElementById("note-form");
   const titleInput = document.getElementById("note-title-input");
@@ -12,8 +11,6 @@
     card.className = `note-card${note.status === "held" ? " held" : ""}${note.origin === "user" ? " user-note" : ""}`;
     card.id = note.id;
     card.dataset.noteId = note.id;
-    card.style.left = `${note.x}%`;
-    card.style.top = `${note.y}%`;
 
     const pin = document.createElement("span");
     pin.className = "pin";
@@ -81,28 +78,41 @@
   }
 
   function makeDraggable(card) {
-    let startX = 0, startY = 0, startLeft = 0, startTop = 0;
+    const list = document.getElementById("note-list");
+    function finishDrag() {
+      if (card.dataset.dragging !== "true") return;
+      card.classList.remove("dragging");
+      list.querySelectorAll(".drop-target").forEach((item) => item.classList.remove("drop-target"));
+      card.dataset.dragging = "false";
+    }
     card.addEventListener("pointerdown", function (event) {
       if (event.target.closest("button, a")) return;
       event.preventDefault();
       card.setPointerCapture(event.pointerId);
-      const boardRect = board.getBoundingClientRect();
-      const cardRect = card.getBoundingClientRect();
-      startX = event.clientX; startY = event.clientY;
-      startLeft = cardRect.left - boardRect.left; startTop = cardRect.top - boardRect.top;
       card.dataset.dragging = "true";
+      card.classList.add("dragging");
     });
     card.addEventListener("pointermove", function (event) {
       if (card.dataset.dragging !== "true") return;
-      const boardRect = board.getBoundingClientRect();
-      const nextLeft = Math.max(4, Math.min(boardRect.width - card.offsetWidth - 4, startLeft + event.clientX - startX));
-      const nextTop = Math.max(4, Math.min(boardRect.height - card.offsetHeight - 4, startTop + event.clientY - startY));
-      card.style.left = `${(nextLeft / boardRect.width) * 100}%`;
-      card.style.top = `${(nextTop / boardRect.height) * 100}%`;
+      const candidates = [...list.children].filter((item) => item !== card);
+      const target = candidates.find((item) => {
+        const rect = item.getBoundingClientRect();
+        const inRow = event.clientY >= rect.top && event.clientY <= rect.bottom;
+        return event.clientY < rect.top + rect.height / 2 || (inRow && event.clientX < rect.left + rect.width / 2);
+      });
+      list.querySelectorAll(".drop-target").forEach((item) => item.classList.remove("drop-target"));
+      if (target) {
+        target.classList.add("drop-target");
+        list.insertBefore(card, target);
+      } else {
+        list.appendChild(card);
+      }
     });
     card.addEventListener("pointerup", function () {
-      card.dataset.dragging = "false";
+      finishDrag();
     });
+    card.addEventListener("pointercancel", finishDrag);
+    card.addEventListener("lostpointercapture", finishDrag);
   }
 
   function openEditor(card) {
@@ -138,13 +148,12 @@
     } else {
       const card = document.createElement("article");
       card.className = "note-card user-note";
-      card.style.left = "8%"; card.style.top = "34%";
       card.dataset.noteId = `note-${Date.now()}`;
       const attrs = attrsInput.value.split(",").map((value) => value.trim()).filter(Boolean).map((value) => `<span>${value}</span>`).join("");
       card.innerHTML = `<span class="pin">●</span><span class="tag manual">手動作成</span><h3 class="note-title"></h3><p class="note-memo"></p><div class="note-attrs">${attrs}</div><div class="note-footer"><span class="source-link">作成者：あなた</span><span class="note-actions"><button data-action="edit">編集</button><button data-action="delete">削除</button></span></div>`;
       card.querySelector(".note-title").textContent = titleInput.value;
       card.querySelector(".note-memo").textContent = memoInput.value || "メモはありません。";
-      board.appendChild(card);
+      document.getElementById("note-list").appendChild(card);
       bindCard(card);
     }
     dialog.close();

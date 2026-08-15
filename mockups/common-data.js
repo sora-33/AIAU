@@ -46,9 +46,7 @@ window.AIAU_DATA = {
       attrs: ["上野公園", "約2時間", "午前", "1,800円"],
       origin: "ai",
       source: "message-museum",
-      sourceLabel: "ゆき「美術館に行きたい」",
-      x: 6,
-      y: 9
+      sourceLabel: "ゆき「美術館に行きたい」"
     },
     {
       id: "note-ramen",
@@ -59,9 +57,7 @@ window.AIAU_DATA = {
       source: "message-ramen",
       sourceLabel: "けん「駅前のラーメン」",
       status: "held",
-      holdReason: "今回は見送り",
-      x: 51,
-      y: 12
+      holdReason: "今回は見送り"
     },
     {
       id: "note-yanaka",
@@ -70,9 +66,7 @@ window.AIAU_DATA = {
       attrs: ["台東区谷中", "約1時間30分", "夕方", "無料"],
       origin: "ai",
       source: "message-market",
-      sourceLabel: "あい「谷中銀座を散歩」",
-      x: 25,
-      y: 55
+      sourceLabel: "あい「谷中銀座を散歩」"
     },
     {
       id: "note-cafe",
@@ -81,9 +75,7 @@ window.AIAU_DATA = {
       attrs: ["根津駅から徒歩5分", "約45分", "午後", "800円〜"],
       origin: "user",
       source: null,
-      sourceLabel: null,
-      x: 63,
-      y: 58
+      sourceLabel: null
     }
   ],
   plans: [
