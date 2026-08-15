@@ -96,7 +96,8 @@ window.AIAU_DATA = {
       end: "12:00",
       location: "上野公園",
       type: "plan",
-      status: "adopted"
+      status: "adopted",
+      votes: 7
     },
     {
       id: "plan-museum-option",
@@ -131,7 +132,8 @@ window.AIAU_DATA = {
       end: "14:00",
       location: "根津",
       type: "plan",
-      status: "draft"
+      status: "draft",
+      votes: 6
     },
     {
       id: "plan-market",
@@ -156,7 +158,11 @@ window.AIAU_DATA = {
       allDay: true,
       detail: "チェックイン 15:00 / チェックアウト 10:00",
       location: "上野駅から徒歩8分",
-      color: "coral"
+      color: "coral",
+      top: 65,
+      height: 130,
+      left: "18px",
+      right: "18px"
     },
     {
       id: "event-museum",
@@ -169,6 +175,10 @@ window.AIAU_DATA = {
       location: "上野公園",
       cost: "1,800円",
       color: "coral",
+      top: 65,
+      height: 130,
+      left: "18px",
+      right: "18px",
       noteId: "note-museum",
       planId: "plan-museum"
     },
@@ -181,7 +191,11 @@ window.AIAU_DATA = {
       time: "12:00–12:15",
       detail: "徒歩または東京メトロで移動",
       location: "上野駅から根津駅",
-      color: "lavender"
+      color: "lavender",
+      top: 195,
+      height: 24,
+      left: "18px",
+      right: "18px"
     },
     {
       id: "event-lunch",
@@ -192,7 +206,11 @@ window.AIAU_DATA = {
       time: "12:15–13:00",
       detail: "合流できたら一緒に昼食。プラン候補と時間が重なっています。",
       location: "上野駅・広小路口",
-      color: "blue"
+      color: "blue",
+      top: 219,
+      height: 52,
+      left: "43%",
+      right: "18px"
     },
     {
       id: "event-undecided",
@@ -203,6 +221,10 @@ window.AIAU_DATA = {
       time: "12:15–13:00",
       detail: "画面2で投票中の候補があります。",
       color: "dashed",
+      top: 219,
+      height: 52,
+      left: "18px",
+      right: "58%",
       planId: "plan-lunch-option"
     },
     {
@@ -215,6 +237,10 @@ window.AIAU_DATA = {
       detail: "歩き疲れたら立ち寄る候補。電源あり。",
       location: "根津",
       color: "coral",
+      top: 282,
+      height: 49,
+      left: "18px",
+      right: "18px",
       noteId: "note-cafe",
       planId: "plan-cafe"
     },
@@ -228,6 +254,10 @@ window.AIAU_DATA = {
       detail: "夕焼けだんだんで写真を撮る。",
       location: "台東区谷中",
       color: "coral",
+      top: 455,
+      height: 98,
+      left: "18px",
+      right: "18px",
       noteId: "note-yanaka",
       planId: "plan-market"
     },
@@ -240,7 +270,11 @@ window.AIAU_DATA = {
       time: "17:30–19:45",
       detail: "東京駅 → 新大阪駅",
       location: "東京駅",
-      color: "green"
+      color: "green",
+      top: 0,
+      height: 0,
+      left: "18px",
+      right: "18px"
     }
   ],
   history: [

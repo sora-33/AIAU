@@ -13,7 +13,7 @@
     <nav class="main-nav"><a class="active" href="screen1.html">アイデア</a><a href="screen2.html">プラン</a><a href="screen3.html">カレンダー</a></nav>
     <div class="header-actions"><div class="avatar-stack"><span class="avatar">ゆ</span><span class="avatar">け</span><span class="avatar">あ</span></div><button class="icon-button" aria-label="設定">⚙</button></div>
   </header>
-  <div class="mock-note">静的モックアップ / バックエンド・AI 未接続 / 旅行データはダミーです</div>
+  <div class="mock-note"><span>静的モックアップ / バックエンド・AI 未接続 / 旅行データはダミーです</span></div>
   <main class="page-shell">
     <div class="page-title">
       <div><span class="eyebrow">SCREEN 01 · IDEA BOARD</span><h1>アイデアを集める</h1><p>チャットから見つけた「やりたい」を、みんなで育てよう。</p></div>
@@ -25,18 +25,7 @@
           <div class="section-heading"><div><h2>アイデアボード</h2><p>付箋をドラッグして並べ替えられます</p></div><span class="tag ai"><span class="dot"></span>AI 整理中</span></div>
         </div>
         <div class="board-canvas" id="board-canvas">
-          <article class="note-card" id="note-museum" data-note-id="note-museum" style="left:6%;top:9%;">
-            <span class="pin">●</span><span class="tag ai">AI 抽出</span><h3 class="note-title">東京都美術館</h3><p class="note-memo">企画展をゆっくり見る。チケットは事前購入できそう。</p><div class="note-attrs"><span>上野公園</span><span>約2時間</span><span>午前</span><span>1,800円</span></div><div class="note-footer"><a class="source-link" href="#message-museum">根拠：ゆきの発言 ↗</a><span class="note-actions"><button data-action="edit">編集</button><button data-action="delete">削除</button></span></div>
-          </article>
-          <article class="note-card held" id="note-ramen" data-note-id="note-ramen" style="left:51%;top:12%;">
-            <span class="pin">●</span><span class="tag held">保留中</span><h3 class="note-title">駅前ラーメン</h3><p class="note-memo">上野駅前の人気店。混雑状況を見て判断。</p><div class="note-attrs"><span>上野駅</span><span>約45分</span><span>昼</span><span>1,200円</span></div><div class="note-footer"><a class="source-link" href="#message-hold">根拠：けんの発言 ↗</a><span class="note-actions"><button data-action="edit">編集</button><button data-action="delete">削除</button></span></div>
-          </article>
-          <article class="note-card" id="note-yanaka" data-note-id="note-yanaka" style="left:25%;top:55%;">
-            <span class="pin">●</span><span class="tag ai">AI 抽出</span><h3 class="note-title">谷中銀座を散歩</h3><p class="note-memo">夕焼けだんだんで写真を撮りたい。</p><div class="note-attrs"><span>台東区谷中</span><span>約1時間30分</span><span>夕方</span><span>無料</span></div><div class="note-footer"><a class="source-link" href="#message-market">根拠：あいの発言 ↗</a><span class="note-actions"><button data-action="edit">編集</button><button data-action="delete">削除</button></span></div>
-          </article>
-          <article class="note-card user-note" id="note-cafe" data-note-id="note-cafe" style="left:63%;top:58%;">
-            <span class="pin">●</span><span class="tag manual">手動作成</span><h3 class="note-title">古書店カフェで休憩</h3><p class="note-memo">歩き疲れたら立ち寄る候補。電源あり。</p><div class="note-attrs"><span>根津駅</span><span>約45分</span><span>午後</span><span>800円〜</span></div><div class="note-footer"><span class="source-link">作成者：ゆき</span><span class="note-actions"><button data-action="edit">編集</button><button data-action="delete">削除</button></span></div>
-          </article>
+          <div id="note-list"></div>
           <div class="ai-status"><span class="ai-pulse"></span><span>AI 整理中</span><span style="color:var(--muted);">新しい発言を確認しています</span></div>
         </div>
       </section>

@@ -7,6 +7,79 @@
   const attrsInput = document.getElementById("note-attrs-input");
   let editingCard = null;
 
+  function createNoteCard(note) {
+    const card = document.createElement("article");
+    card.className = `note-card${note.status === "held" ? " held" : ""}${note.origin === "user" ? " user-note" : ""}`;
+    card.id = note.id;
+    card.dataset.noteId = note.id;
+    card.style.left = `${note.x}%`;
+    card.style.top = `${note.y}%`;
+
+    const pin = document.createElement("span");
+    pin.className = "pin";
+    pin.textContent = "●";
+    card.appendChild(pin);
+
+    const origin = document.createElement("span");
+    origin.className = `tag ${note.status === "held" ? "held" : note.origin === "ai" ? "ai" : "manual"}`;
+    origin.textContent = note.status === "held" ? "保留中" : note.origin === "ai" ? "AI 抽出" : "手動作成";
+    card.appendChild(origin);
+
+    const title = document.createElement("h3");
+    title.className = "note-title";
+    title.textContent = note.title;
+    card.appendChild(title);
+    const memo = document.createElement("p");
+    memo.className = "note-memo";
+    memo.textContent = note.memo;
+    card.appendChild(memo);
+
+    const attrList = document.createElement("div");
+    attrList.className = "note-attrs";
+    note.attrs.forEach((attr) => {
+      const item = document.createElement("span");
+      item.textContent = attr;
+      attrList.appendChild(item);
+    });
+    card.appendChild(attrList);
+
+    const footer = document.createElement("div");
+    footer.className = "note-footer";
+    if (note.source) {
+      const source = document.createElement("a");
+      source.className = "source-link";
+      source.href = `#${note.source}`;
+      source.textContent = `根拠：${note.sourceLabel.replace(/「.*$/, "")} ↗`;
+      footer.appendChild(source);
+    } else {
+      const source = document.createElement("span");
+      source.className = "source-link";
+      source.textContent = "作成者：ゆき";
+      footer.appendChild(source);
+    }
+    const actions = document.createElement("span");
+    actions.className = "note-actions";
+    actions.innerHTML = '<button data-action="edit">編集</button><button data-action="delete">削除</button>';
+    footer.appendChild(actions);
+    card.appendChild(footer);
+    return card;
+  }
+
+  function bindCard(card) {
+    makeDraggable(card);
+    card.querySelector('[data-action="edit"]').addEventListener("click", () => openEditor(card));
+    card.querySelector('[data-action="delete"]').addEventListener("click", () => removeCard(card));
+  }
+
+  function renderNotes() {
+    const list = document.getElementById("note-list");
+    window.AIAU_DATA.notes.forEach((note) => {
+      const card = createNoteCard(note);
+      list.appendChild(card);
+      bindCard(card);
+    });
+  }
+
   function makeDraggable(card) {
     let startX = 0, startY = 0, startLeft = 0, startTop = 0;
     card.addEventListener("pointerdown", function (event) {
@@ -47,11 +120,7 @@
     if (window.confirm("この付箋を削除しますか？")) card.remove();
   }
 
-  document.querySelectorAll(".note-card").forEach((card) => {
-    makeDraggable(card);
-    card.querySelector('[data-action="edit"]').addEventListener("click", () => openEditor(card));
-    card.querySelector('[data-action="delete"]').addEventListener("click", () => removeCard(card));
-  });
+  renderNotes();
   document.getElementById("add-note-button").addEventListener("click", () => openEditor(null));
   form.addEventListener("submit", function (event) {
     event.preventDefault();
@@ -76,9 +145,7 @@
       card.querySelector(".note-title").textContent = titleInput.value;
       card.querySelector(".note-memo").textContent = memoInput.value || "メモはありません。";
       board.appendChild(card);
-      makeDraggable(card);
-      card.querySelector('[data-action="edit"]').addEventListener("click", () => openEditor(card));
-      card.querySelector('[data-action="delete"]').addEventListener("click", () => removeCard(card));
+      bindCard(card);
     }
     dialog.close();
   });

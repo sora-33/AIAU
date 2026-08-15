@@ -13,7 +13,7 @@
     <nav class="main-nav"><a href="screen1.html">アイデア</a><a class="active" href="screen2.html">プラン</a><a href="screen3.html">カレンダー</a></nav>
     <div class="header-actions"><div class="avatar-stack"><span class="avatar">ゆ</span><span class="avatar">け</span><span class="avatar">あ</span></div><button class="icon-button" aria-label="設定">⚙</button></div>
   </header>
-  <div class="mock-note">静的モックアップ / バックエンド・AI 未接続 / 投票・履歴は見た目を確認するためのデモです</div>
+  <div class="mock-note"><span>静的モックアップ / バックエンド・AI 未接続 / 投票・履歴は見た目を確認するためのデモです</span></div>
   <main class="page-shell">
     <div class="page-title"><div><span class="eyebrow">SCREEN 02 · TIMELINE PLAN</span><h1>タイムラインプラン</h1><p>候補を並べて、みんなの投票で旅の流れを決めよう。</p></div><div class="title-actions"><a class="secondary-button" href="screen1.html" style="text-decoration:none;">← 付箋を見る</a><a class="primary-button" href="screen3.html" style="text-decoration:none;">カレンダーへ →</a></div></div>
     <div class="timeline-layout">
@@ -21,18 +21,13 @@
         <div class="plan-toolbar"><div class="toolbar-left"><div class="date-switch"><button>‹</button><span>10月18日（土）</span><button>›</button></div><span class="tag"><span class="dot"></span>現在 v8</span></div><div class="toolbar-right"><span style="color:var(--muted);font-size:11px;">最終更新 09:46</span><button class="history-button" id="history-toggle">◷ 変更履歴 <span style="color:var(--muted);">（8）</span></button></div></div>
         <div class="timeline-scroll"><div class="timeline">
           <div class="timeline-head"><div class="timeline-label">時間</div><div class="hours"><span>09:00</span><span>10:00</span><span>11:00</span><span>12:00</span><span>13:00</span><span>14:00</span><span>15:00</span><span>16:00</span><span>17:00</span><span>18:00</span></div></div>
-          <div class="timeline-row"><div class="row-label"><strong>午前</strong><span>09:00–12:00</span></div><div class="time-track"><div class="schedule-block" style="left:10%;width:20%;"><h3 class="schedule-title">東京都美術館</h3><div class="schedule-meta">10:00–12:00 ・ 上野公園</div><a class="schedule-note" href="screen1.html#note-museum">付箋を見る ↗</a></div></div></div>
-          <div class="timeline-row parallel-row"><div class="row-label"><strong>昼食</strong><span>12:00–14:00</span><span class="option-group-label">◈ 2案を比較中</span></div><div class="time-track"><div class="schedule-block option" style="left:32%;width:15%;"><div class="option-group-label">候補 A</div><h3 class="schedule-title">駅前ラーメン</h3><div class="schedule-meta">12:15–13:00</div><div class="vote-row"><button class="vote-button" data-vote>♡ 投票</button><span class="vote-count">2票</span><button class="adopt-button" data-adopt>採用する</button></div></div><div class="schedule-block draft" style="left:48%;width:16%;top:86px;"><div class="option-group-label" style="color:var(--teal-dark);">候補 B</div><h3 class="schedule-title">古書店カフェ</h3><div class="schedule-meta">13:15–14:00</div><div class="vote-row"><button class="vote-button" data-vote>♡ 投票</button><span class="vote-count">6票</span><button class="adopt-button" data-adopt>採用する</button></div></div></div></div>
-          <div class="timeline-row"><div class="row-label"><strong>午後</strong><span>14:00–18:00</span></div><div class="time-track"><div class="schedule-block" style="left:70%;width:16%;"><h3 class="schedule-title">谷中銀座を散歩</h3><div class="schedule-meta">16:00–17:30 ・ 台東区谷中</div><a class="schedule-note" href="screen1.html#note-yanaka">付箋を見る ↗</a></div></div></div>
+          <div class="timeline-row"><div class="row-label"><strong>午前</strong><span>09:00–12:00</span></div><div class="time-track" data-plan-slot="morning"></div></div>
+          <div class="timeline-row parallel-row"><div class="row-label"><strong>昼食</strong><span>12:00–14:00</span><span class="option-group-label">◈ 2案を比較中</span></div><div class="time-track" data-plan-slot="lunch"></div></div>
+          <div class="timeline-row"><div class="row-label"><strong>午後</strong><span>14:00–18:00</span></div><div class="time-track" data-plan-slot="afternoon"></div></div>
         </div></div>
         <div class="source-strip"><span>↗</span><span>このプランは画面1の付箋から作られています</span><a href="screen1.html">付箋を編集して更新する</a></div>
       </section>
-      <aside class="history-drawer" id="history-drawer" hidden><div class="drawer-header"><div><h2>変更履歴</h2><p>新しい順 / 日時でグループ化</p></div><button class="icon-button" id="history-close" aria-label="閉じる">×</button></div>
-        <div class="history-version current"><div class="version-head"><span class="version-id">v8 · 10月18日 09:46</span><span class="current-badge">現在のバージョン</span></div><h3 class="version-title">投票結果を反映</h3><p class="version-summary">けんが美術館の採用案を確定</p></div>
-        <div class="history-version"><div class="version-head"><span class="version-id">v7 · 10月18日 09:44</span></div><h3 class="version-title">プランを再構成</h3><p class="version-summary">AI が付箋の更新を検知し、昼食候補を追加</p><div class="version-actions"><button data-preview>差分をプレビュー</button><button data-restore>この版を復元</button></div></div>
-        <div class="history-version"><div class="version-head"><span class="version-id">v6 · 10月17日 21:10</span></div><h3 class="version-title">付箋から更新</h3><p class="version-summary">ゆきが「谷中銀座を散歩」の希望時間帯を夕方へ変更</p><div class="version-actions"><button data-preview>差分をプレビュー</button><button data-restore>この版を復元</button></div></div>
-        <div class="history-version"><div class="version-head"><span class="version-id">v5 · 10月17日 20:52</span></div><h3 class="version-title">予定を追加</h3><p class="version-summary">匿名ユーザーが古書店カフェで休憩を候補に追加</p><div class="version-actions"><button data-preview>差分をプレビュー</button><button data-restore>この版を復元</button></div></div>
-      </aside>
+      <aside class="history-drawer" id="history-drawer" hidden><div class="drawer-header"><div><h2>変更履歴</h2><p>新しい順 / 日時でグループ化</p></div><button class="icon-button" id="history-close" aria-label="閉じる">×</button></div><div id="history-list"></div></aside>
     </div>
   </main>
   <script src="common-data.js"></script><script src="screen2.js"></script>
