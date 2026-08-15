@@ -51,7 +51,7 @@
     } else {
       const source = document.createElement("span");
       source.className = "source-link";
-      source.textContent = "作成者：ゆき";
+      source.textContent = "作成者：あなた";
       footer.appendChild(source);
     }
     const actions = document.createElement("span");
@@ -79,8 +79,17 @@
 
   function makeDraggable(card) {
     const list = document.getElementById("note-list");
+    let placeholder = null;
     function finishDrag() {
       if (card.dataset.dragging !== "true") return;
+      document.removeEventListener("pointermove", moveDrag);
+      document.removeEventListener("pointerup", finishDrag);
+      document.removeEventListener("pointercancel", finishDrag);
+      if (placeholder) {
+        placeholder.replaceWith(card);
+        placeholder = null;
+      }
+      card.style.display = "";
       card.classList.remove("dragging");
       list.querySelectorAll(".drop-target").forEach((item) => item.classList.remove("drop-target"));
       card.dataset.dragging = "false";
@@ -88,13 +97,20 @@
     card.addEventListener("pointerdown", function (event) {
       if (event.target.closest("button, a")) return;
       event.preventDefault();
-      card.setPointerCapture(event.pointerId);
+      placeholder = document.createElement("div");
+      placeholder.className = "note-drop-placeholder";
+      placeholder.style.height = `${card.offsetHeight}px`;
+      list.insertBefore(placeholder, card);
+      card.style.display = "none";
       card.dataset.dragging = "true";
       card.classList.add("dragging");
+      document.addEventListener("pointermove", moveDrag);
+      document.addEventListener("pointerup", finishDrag);
+      document.addEventListener("pointercancel", finishDrag);
     });
-    card.addEventListener("pointermove", function (event) {
+    function moveDrag(event) {
       if (card.dataset.dragging !== "true") return;
-      const candidates = [...list.children].filter((item) => item !== card);
+      const candidates = [...list.querySelectorAll(".note-card")];
       const target = candidates.find((item) => {
         const rect = item.getBoundingClientRect();
         const inRow = event.clientY >= rect.top && event.clientY <= rect.bottom;
@@ -103,25 +119,22 @@
       list.querySelectorAll(".drop-target").forEach((item) => item.classList.remove("drop-target"));
       if (target) {
         target.classList.add("drop-target");
-        list.insertBefore(card, target);
+        list.insertBefore(placeholder, target);
       } else {
-        list.appendChild(card);
+        list.appendChild(placeholder);
       }
-    });
-    card.addEventListener("pointerup", function () {
-      finishDrag();
-    });
-    card.addEventListener("pointercancel", finishDrag);
-    card.addEventListener("lostpointercapture", finishDrag);
+    }
   }
 
   function openEditor(card) {
     editingCard = card;
-    const note = window.AIAU_DATA.notes.find((item) => item.id === card.dataset.noteId);
+    const note = card
+      ? window.AIAU_DATA.notes.find((item) => item.id === card.dataset.noteId)
+      : null;
     document.getElementById("dialog-title").textContent = note ? "付箋を編集" : "付箋を追加";
     titleInput.value = note ? note.title : "";
     memoInput.value = note ? note.memo : "";
-    attrsInput.value = note ? note.attrs.join(", ") : "";
+    attrsInput.value = note ? note.attrs.join("、") : "";
     dialog.showModal();
     titleInput.focus();
   }
@@ -139,20 +152,22 @@
       editingCard.querySelector(".note-memo").textContent = memoInput.value || "メモはありません。";
       const attrs = editingCard.querySelector(".note-attrs");
       attrs.innerHTML = "";
-      attrsInput.value.split(",").map((value) => value.trim()).filter(Boolean).forEach((value) => {
+      attrsInput.value.split("、").map((value) => value.trim()).filter(Boolean).forEach((value) => {
         const span = document.createElement("span"); span.textContent = value; attrs.appendChild(span);
       });
       editingCard.classList.add("user-note");
       editingCard.querySelector(".tag").textContent = "手動編集";
       editingCard.querySelector(".tag").className = "tag manual";
     } else {
-      const card = document.createElement("article");
-      card.className = "note-card user-note";
-      card.dataset.noteId = `note-${Date.now()}`;
-      const attrs = attrsInput.value.split(",").map((value) => value.trim()).filter(Boolean).map((value) => `<span>${value}</span>`).join("");
-      card.innerHTML = `<span class="pin">●</span><span class="tag manual">手動作成</span><h3 class="note-title"></h3><p class="note-memo"></p><div class="note-attrs">${attrs}</div><div class="note-footer"><span class="source-link">作成者：あなた</span><span class="note-actions"><button data-action="edit">編集</button><button data-action="delete">削除</button></span></div>`;
-      card.querySelector(".note-title").textContent = titleInput.value;
-      card.querySelector(".note-memo").textContent = memoInput.value || "メモはありません。";
+      const card = createNoteCard({
+        id: `note-${Date.now()}`,
+        title: titleInput.value,
+        memo: memoInput.value || "メモはありません。",
+        attrs: attrsInput.value.split("、").map((value) => value.trim()).filter(Boolean),
+        origin: "user",
+        source: null,
+        sourceLabel: null
+      });
       document.getElementById("note-list").appendChild(card);
       bindCard(card);
     }

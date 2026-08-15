@@ -49,6 +49,15 @@ window.AIAU_DATA = {
       sourceLabel: "ゆき「美術館に行きたい」"
     },
     {
+      id: "note-western-museum",
+      title: "国立西洋美術館",
+      memo: "駅から近く、企画展と常設展をまとめて見られる候補。",
+      attrs: ["上野公園", "約1時間30分", "午前", "1,200円"],
+      origin: "ai",
+      source: "message-museum",
+      sourceLabel: "ゆき「美術館に行きたい」"
+    },
+    {
       id: "note-ramen",
       title: "駅前ラーメン",
       memo: "上野駅前の人気店。混雑状況を見て判断。",
@@ -93,7 +102,7 @@ window.AIAU_DATA = {
     },
     {
       id: "plan-museum-option",
-      noteId: "note-museum",
+      noteId: "note-western-museum",
       title: "国立西洋美術館",
       time: "10:00–11:30",
       start: "10:00",
@@ -214,7 +223,7 @@ window.AIAU_DATA = {
       detail: "画面2で投票中の候補があります。",
       color: "dashed",
       top: 219,
-      height: 52,
+      height: 68,
       left: "18px",
       right: "58%",
       planId: "plan-lunch-option"
@@ -229,7 +238,7 @@ window.AIAU_DATA = {
       detail: "歩き疲れたら立ち寄る候補。電源あり。",
       location: "根津",
       color: "coral",
-      top: 282,
+      top: 292,
       height: 49,
       left: "18px",
       right: "18px",

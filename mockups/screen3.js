@@ -88,7 +88,15 @@
         day.className = "month-day today";
         day.textContent = "18";
         cell.appendChild(day);
-        events.filter((event) => event.date === "10/18" && !event.allDay).slice(0, 2).forEach((event) => appendMonthEvent(cell, event));
+        const dayEvents = events.filter((event) => event.date === "10/18" && !event.allDay);
+        dayEvents.slice(0, 2).forEach((event) => appendMonthEvent(cell, event));
+        if (dayEvents.length > 2) {
+          appendMonthEvent(cell, {
+            id: "week-overflow",
+            title: `+${dayEvents.length - 2}件`,
+            color: "more-events"
+          });
+        }
       }
       if (index === 6) {
         const day = document.createElement("span");

@@ -1,27 +1,61 @@
 (function () {
   const data = window.AIAU_DATA;
   const drawer = document.getElementById("history-drawer");
+  const rows = document.getElementById("plan-rows");
+  const selection = {
+    museum: "plan-museum",
+    lunch: null
+  };
+  const voteAdjustments = {};
+  const votedPlans = new Set();
 
-  function createPlanBlock(plan, index) {
+  const groups = [
+    {
+      id: "museum",
+      label: "美術館の案",
+      planIds: ["plan-museum", "plan-museum-option"]
+    },
+    {
+      id: "lunch",
+      label: "昼食の候補",
+      planIds: ["plan-lunch-option"]
+    }
+  ];
+
+  const positions = {
+    "plan-museum": ["4%", "28%"],
+    "plan-museum-option": ["35%", "28%"],
+    "plan-lunch-option": ["35%", "28%"],
+    "plan-cafe": ["48%", "27%"],
+    "plan-market": ["70%", "27%"]
+  };
+
+  function findPlan(id) {
+    return data.plans.find((item) => item.id === id);
+  }
+
+  function getVotes(plan) {
+    return (plan.votes || 0) + (voteAdjustments[plan.id] || 0);
+  }
+
+  function createPlanBlock(plan, options = {}) {
     const block = document.createElement("div");
-    block.className = `schedule-block ${plan.type === "option" ? "option" : plan.status === "draft" ? "draft" : ""}`;
-    const positions = {
-      "plan-museum": ["10%", "20%", "0"],
-      "plan-museum-option": ["31%", "17%", "0"],
-      "plan-lunch-option": ["32%", "15%", "0"],
-      "plan-cafe": ["48%", "16%", "86px"],
-      "plan-market": ["70%", "16%", "0"]
-    };
-    const position = positions[plan.id] || [`${10 + index * 18}%`, "16%", "0"];
+    const classes = [
+      "schedule-block",
+      plan.type === "option" ? "option" : plan.status === "draft" ? "draft" : "",
+      options.rejected ? "rejected" : ""
+    ].filter(Boolean);
+    block.className = classes.join(" ");
+    block.dataset.planId = plan.id;
+    const position = positions[plan.id] || ["10%", "25%"];
     block.style.left = position[0];
     block.style.width = position[1];
-    block.style.top = position[2];
 
-    if (plan.type === "option") {
-      const label = document.createElement("div");
-      label.className = "option-group-label";
-      label.textContent = plan.id === "plan-lunch-option" ? "候補 A" : "候補 B";
-      block.appendChild(label);
+    if (options.rejected) {
+      const status = document.createElement("span");
+      status.className = "tag held";
+      status.textContent = "不採用";
+      block.appendChild(status);
     }
     const title = document.createElement("h3");
     title.className = "schedule-title";
@@ -32,37 +66,105 @@
     meta.textContent = `${plan.time}${plan.location ? ` ・ ${plan.location}` : ""}`;
     block.appendChild(meta);
 
-    if (plan.type === "option" || plan.status === "draft") {
-      const votes = document.createElement("div");
-      votes.className = "vote-row";
-      votes.innerHTML = '<button class="vote-button" data-vote>♡ 投票</button>';
-      const count = document.createElement("span");
-      count.className = "vote-count";
-      count.textContent = `${plan.votes || 0}票`;
-      votes.appendChild(count);
-      votes.insertAdjacentHTML("beforeend", '<button class="adopt-button" data-adopt>採用する</button>');
-      block.appendChild(votes);
-    } else {
-      const link = document.createElement("a");
-      link.className = "schedule-note";
-      link.href = `screen1.html#${plan.noteId}`;
-      link.textContent = "付箋を見る ↗";
-      block.appendChild(link);
-    }
+    const link = document.createElement("a");
+    link.className = "schedule-note";
+    link.href = `screen1.html#${plan.noteId}`;
+    link.textContent = "付箋を見る ↗";
+    block.appendChild(link);
     return block;
   }
 
+  function createTrack(plans, options = {}) {
+    const track = document.createElement("div");
+    track.className = "time-track";
+    plans.forEach((plan) => track.appendChild(createPlanBlock(plan, options)));
+    return track;
+  }
+
+  function createConfirmedRow() {
+    const row = document.createElement("div");
+    row.className = "timeline-row confirmed-row";
+    const label = document.createElement("div");
+    label.className = "row-label";
+    label.innerHTML = "<strong>確定プラン</strong><span>重複しない予定と採用済みの案</span>";
+    row.appendChild(label);
+
+    const confirmedIds = ["plan-market", "plan-cafe", selection.museum];
+    if (selection.lunch) confirmedIds.push(selection.lunch);
+    const confirmedPlans = confirmedIds
+      .map((id) => findPlan(id))
+      .filter(Boolean)
+      .sort((a, b) => a.start.localeCompare(b.start));
+    row.appendChild(createTrack(confirmedPlans));
+    return row;
+  }
+
+  function createCandidateRow(group, plan, rejected) {
+    const row = document.createElement("div");
+    row.className = "timeline-row candidate-row";
+    const label = document.createElement("div");
+    label.className = "row-label candidate-label";
+
+    const name = document.createElement("strong");
+    name.className = "candidate-name";
+    name.textContent = `${group.label}：${plan.title}`;
+    label.appendChild(name);
+    const meta = document.createElement("span");
+    meta.className = "candidate-meta";
+    meta.textContent = `${plan.time} / ${rejected ? "不採用" : `${getVotes(plan)}票`}`;
+    label.appendChild(meta);
+
+    const actions = document.createElement("div");
+    actions.className = "candidate-actions";
+    if (!rejected) {
+      const vote = document.createElement("button");
+      vote.className = `vote-button${votedPlans.has(plan.id) ? " voted" : ""}`;
+      vote.dataset.vote = plan.id;
+      vote.textContent = votedPlans.has(plan.id) ? "♥ 投票済み" : "♡ 投票";
+      actions.appendChild(vote);
+      const count = document.createElement("span");
+      count.className = "vote-count";
+      count.textContent = `${getVotes(plan)}票`;
+      actions.appendChild(count);
+      const adopt = document.createElement("button");
+      adopt.className = "adopt-button";
+      adopt.dataset.adopt = plan.id;
+      adopt.dataset.group = group.id;
+      adopt.textContent = "この案を採用";
+      actions.appendChild(adopt);
+    } else {
+      const status = document.createElement("span");
+      status.className = "tag held";
+      status.textContent = "不採用";
+      actions.appendChild(status);
+    }
+    label.appendChild(actions);
+    row.appendChild(label);
+    row.appendChild(createTrack([plan], { rejected }));
+    return row;
+  }
+
   function renderPlans() {
-    const slotMap = {
-      morning: ["plan-museum", "plan-museum-option"],
-      lunch: ["plan-lunch-option", "plan-cafe"],
-      afternoon: ["plan-market"]
-    };
-    document.querySelectorAll("[data-plan-slot]").forEach((slot) => {
-      slotMap[slot.dataset.planSlot].forEach((id, index) => {
-        const plan = data.plans.find((item) => item.id === id);
-        if (plan) slot.appendChild(createPlanBlock(plan, index));
-      });
+    rows.innerHTML = "";
+    rows.appendChild(createConfirmedRow());
+    groups.forEach((group) => {
+      const selected = selection[group.id];
+      const candidateIds = selected === "plan-museum"
+        ? ["plan-museum-option"]
+        : selected
+          ? group.planIds.filter((id) => id !== selected)
+          : group.planIds;
+      candidateIds
+        .forEach((id) => {
+          const plan = findPlan(id);
+          if (!plan) return;
+          const rejected = Boolean(
+            selected &&
+            !(group.id === "museum" && selected === "plan-museum") &&
+            id !== selected
+          );
+          rows.appendChild(createCandidateRow(group, plan, rejected));
+        });
     });
   }
 
@@ -98,24 +200,28 @@
     });
   }
 
-  function bindInteractions() {
+  function bindPlanInteractions() {
     document.querySelectorAll("[data-vote]").forEach((button) => {
       button.addEventListener("click", () => {
-        button.classList.toggle("voted");
-        button.textContent = button.classList.contains("voted") ? "♥ 投票済み" : "♡ 投票";
-        const count = button.parentElement.querySelector(".vote-count");
-        const number = Number.parseInt(count.textContent, 10) || 0;
-        count.textContent = `${number + (button.classList.contains("voted") ? 1 : -1)}票`;
+        const planId = button.dataset.vote;
+        const voted = votedPlans.has(planId);
+        voteAdjustments[planId] = (voteAdjustments[planId] || 0) + (voted ? -1 : 1);
+        if (voted) votedPlans.delete(planId);
+        else votedPlans.add(planId);
+        renderPlans();
+        bindPlanInteractions();
       });
     });
     document.querySelectorAll("[data-adopt]").forEach((button) => {
       button.addEventListener("click", () => {
-        document.querySelectorAll("[data-adopt]").forEach((item) => { item.textContent = "採用する"; item.disabled = false; });
-        button.textContent = "採用確定 ✓";
-        button.disabled = true;
-        window.alert("この候補を採用案として確定しました（モックアップ）");
+        selection[button.dataset.group] = button.dataset.adopt;
+        renderPlans();
+        bindPlanInteractions();
       });
     });
+  }
+
+  function bindHistoryInteractions() {
     document.querySelectorAll("[data-preview]").forEach((button) => {
       button.addEventListener("click", () => {
         button.textContent = "差分を表示中";
@@ -128,8 +234,9 @@
   }
 
   renderPlans();
+  bindPlanInteractions();
   renderHistory();
-  bindInteractions();
+  bindHistoryInteractions();
   document.getElementById("history-toggle").addEventListener("click", () => { drawer.hidden = !drawer.hidden; });
   document.getElementById("history-close").addEventListener("click", () => { drawer.hidden = true; });
 })();
