@@ -9,6 +9,7 @@
   };
   const voteAdjustments = {};
   const votedPlans = new Set();
+  const aiSuggestionStates = {};
 
   const groups = [
     {
@@ -56,6 +57,7 @@
     const classes = [
       "schedule-block",
       plan.type === "option" ? "option" : plan.status === "draft" ? "draft" : "",
+      plan.proposalType === "gap" ? "ai-suggestion" : "",
       options.rejected ? "rejected" : ""
     ].filter(Boolean);
     block.className = classes.join(" ");
@@ -74,16 +76,29 @@
     title.className = "schedule-title";
     title.textContent = plan.title;
     block.appendChild(title);
+    if (plan.proposalType === "gap") {
+      const origin = document.createElement("span");
+      origin.className = "schedule-origin";
+      origin.textContent = "AI提案";
+      block.appendChild(origin);
+    }
     const meta = document.createElement("div");
     meta.className = "schedule-meta";
     meta.textContent = `${plan.time}${plan.location ? ` ・ ${plan.location}` : ""}`;
     block.appendChild(meta);
 
-    const link = document.createElement("a");
-    link.className = "schedule-note";
-    link.href = `screen1.html#${plan.noteId}`;
-    link.textContent = "付箋を見る ↗";
-    block.appendChild(link);
+    if (plan.noteId) {
+      const link = document.createElement("a");
+      link.className = "schedule-note";
+      link.href = `screen1.html#${plan.noteId}`;
+      link.textContent = "付箋を見る ↗";
+      block.appendChild(link);
+    } else if (plan.aiReason) {
+      const reason = document.createElement("span");
+      reason.className = "schedule-reason";
+      reason.textContent = `AIが提案した理由：${plan.aiReason}`;
+      block.appendChild(reason);
+    }
     return block;
   }
 
@@ -105,11 +120,47 @@
     const confirmedIds = ["plan-market", "plan-cafe", selection.museum];
     if (selection.lunch) confirmedIds.push(selection.lunch);
     if (selection.afternoon) confirmedIds.push(selection.afternoon);
+    data.plans
+      .filter((plan) => plan.proposalType === "gap" && aiSuggestionStates[plan.id] === "adopted")
+      .forEach((plan) => confirmedIds.push(plan.id));
     const confirmedPlans = confirmedIds
       .map((id) => findPlan(id))
       .filter(Boolean)
       .sort((a, b) => a.start.localeCompare(b.start));
     row.appendChild(createTrack(confirmedPlans));
+    return row;
+  }
+
+  function createSuggestionRow(plan) {
+    const row = document.createElement("div");
+    row.className = "timeline-row suggestion-row";
+    const label = document.createElement("div");
+    label.className = "row-label suggestion-label";
+
+    const name = document.createElement("strong");
+    name.className = "candidate-name";
+    name.textContent = `AI提案：${plan.title}`;
+    label.appendChild(name);
+    const meta = document.createElement("span");
+    meta.className = "candidate-meta";
+    meta.textContent = `${plan.time} / 空き時間`;
+    label.appendChild(meta);
+
+    const actions = document.createElement("div");
+    actions.className = "candidate-actions ai-suggestion-actions";
+    const adopt = document.createElement("button");
+    adopt.className = "ai-adopt-button";
+    adopt.dataset.aiAdopt = plan.id;
+    adopt.textContent = "採用する";
+    actions.appendChild(adopt);
+    const reject = document.createElement("button");
+    reject.className = "ai-reject-button";
+    reject.dataset.aiReject = plan.id;
+    reject.textContent = "却下する";
+    actions.appendChild(reject);
+    label.appendChild(actions);
+    row.appendChild(label);
+    row.appendChild(createTrack([plan]));
     return row;
   }
 
@@ -180,6 +231,9 @@
           rows.appendChild(createCandidateRow(group, plan, rejected));
         });
     });
+    data.plans
+      .filter((plan) => plan.proposalType === "gap" && !aiSuggestionStates[plan.id])
+      .forEach((plan) => rows.appendChild(createSuggestionRow(plan)));
   }
 
   function renderHistory() {
@@ -229,6 +283,20 @@
     document.querySelectorAll("[data-adopt]").forEach((button) => {
       button.addEventListener("click", () => {
         selection[button.dataset.group] = button.dataset.adopt;
+        renderPlans();
+        bindPlanInteractions();
+      });
+    });
+    document.querySelectorAll("[data-ai-adopt]").forEach((button) => {
+      button.addEventListener("click", () => {
+        aiSuggestionStates[button.dataset.aiAdopt] = "adopted";
+        renderPlans();
+        bindPlanInteractions();
+      });
+    });
+    document.querySelectorAll("[data-ai-reject]").forEach((button) => {
+      button.addEventListener("click", () => {
+        aiSuggestionStates[button.dataset.aiReject] = "rejected";
         renderPlans();
         bindPlanInteractions();
       });

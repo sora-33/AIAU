@@ -260,6 +260,7 @@ window.AIAU_DATA = {
       location: "上野公園",
       type: "plan",
       status: "adopted",
+      origin: "chat",
       votes: 7
     },
     {
@@ -272,6 +273,8 @@ window.AIAU_DATA = {
       location: "上野公園",
       type: "option",
       status: "option",
+      origin: "chat",
+      proposalType: "conflict",
       votes: 4
     },
     {
@@ -284,6 +287,8 @@ window.AIAU_DATA = {
       location: "上野駅・広小路口",
       type: "option",
       status: "option",
+      origin: "chat",
+      proposalType: "conflict",
       votes: 2
     },
     {
@@ -296,6 +301,7 @@ window.AIAU_DATA = {
       location: "根津",
       type: "plan",
       status: "draft",
+      origin: "chat",
       votes: 6
     },
     {
@@ -307,7 +313,8 @@ window.AIAU_DATA = {
       end: "17:30",
       location: "台東区谷中",
       type: "plan",
-      status: "adopted"
+      status: "adopted",
+      origin: "chat"
     },
     {
       id: "plan-teamlab-option",
@@ -319,7 +326,35 @@ window.AIAU_DATA = {
       location: "豊洲",
       type: "option",
       status: "option",
+      origin: "chat",
+      proposalType: "conflict",
       votes: 3
+    },
+    {
+      id: "plan-ai-lunch-gap",
+      title: "上野公園でひと休み",
+      time: "12:00–12:15",
+      start: "12:00",
+      end: "12:15",
+      location: "上野公園",
+      type: "suggestion",
+      status: "suggested",
+      origin: "ai",
+      proposalType: "gap",
+      aiReason: "美術館の終了から昼食候補の開始まで、15分の余裕があります。"
+    },
+    {
+      id: "plan-ai-evening-transfer",
+      title: "根津から谷中へ移動",
+      time: "15:45–16:00",
+      start: "15:45",
+      end: "16:00",
+      location: "根津 → 谷中",
+      type: "suggestion",
+      status: "suggested",
+      origin: "ai",
+      proposalType: "gap",
+      aiReason: "午後の予定と谷中銀座の開始時刻の間に、移動時間を確保できます。"
     }
   ],
   calendarEvents: [
