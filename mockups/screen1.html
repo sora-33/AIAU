@@ -31,13 +31,12 @@
       </section>
       <section class="surface-card chat-panel">
         <div class="chat-toolbar"><div class="section-heading"><div><h2>旅のチャット</h2><div class="chat-members"><span class="avatar-stack"><span class="avatar">ゆ</span><span class="avatar">け</span><span class="avatar">あ</span></span> 3人が参加中</div></div><button class="icon-button" aria-label="チャットメニュー">•••</button></div></div>
-        <div class="chat-messages" id="chat-messages"><div class="chat-day">10月18日（土）</div>
-          <div class="message" id="message-museum"><div class="message-avatar">ゆ</div><div class="message-content"><div class="message-meta"><strong>ゆき</strong><span>09:18</span></div><div class="message-bubble">土曜の午前は美術館に行きたいな。東京都美術館が気になる！</div></div></div>
-          <div class="message" id="message-ramen"><div class="message-avatar">け</div><div class="message-content"><div class="message-meta"><strong>けん</strong><span>09:24</span></div><div class="message-bubble">お昼は駅前のラーメンも行ってみたい。並ぶなら早めがいいかも。</div></div></div>
-          <div class="message mine" id="message-market"><div class="message-avatar">あ</div><div class="message-content"><div class="message-meta"><strong>あい</strong><span>09:31</span></div><div class="message-bubble">谷中銀座を散歩するのもよさそう。夕方なら夕焼けも見られそうだね。</div></div></div>
-          <div class="message" id="message-hold"><div class="message-avatar">け</div><div class="message-content"><div class="message-meta"><strong>けん</strong><span>09:42</span></div><div class="message-bubble">ラーメンは今回はなしで、美術館の滞在を長めにしよう。</div></div></div>
-        </div>
-        <form class="chat-composer" id="chat-form"><div class="composer-wrap"><textarea id="chat-input" placeholder="行きたい場所や希望を書いてみよう" rows="1"></textarea><button class="send-button" aria-label="送信">↑</button></div></form>
+        <div class="chat-messages" id="chat-messages"></div>
+        <form class="chat-composer" id="chat-form">
+          <div class="reply-preview" id="reply-preview" hidden></div>
+          <div class="mention-suggestions" id="mention-suggestions" hidden></div>
+          <div class="composer-wrap"><textarea id="chat-input" placeholder="#で付箋、@で参加者をメンション" rows="1"></textarea><button class="send-button" aria-label="送信">↑</button></div>
+        </form>
       </section>
     </div>
   </main>

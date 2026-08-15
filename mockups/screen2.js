@@ -4,7 +4,8 @@
   const rows = document.getElementById("plan-rows");
   const selection = {
     museum: "plan-museum",
-    lunch: null
+    lunch: null,
+    afternoon: null
   };
   const voteAdjustments = {};
   const votedPlans = new Set();
@@ -19,16 +20,13 @@
       id: "lunch",
       label: "昼食の候補",
       planIds: ["plan-lunch-option"]
+    },
+    {
+      id: "afternoon",
+      label: "午後の候補",
+      planIds: ["plan-teamlab-option"]
     }
   ];
-
-  const positions = {
-    "plan-museum": ["4%", "28%"],
-    "plan-museum-option": ["35%", "28%"],
-    "plan-lunch-option": ["35%", "28%"],
-    "plan-cafe": ["48%", "27%"],
-    "plan-market": ["70%", "27%"]
-  };
 
   function findPlan(id) {
     return data.plans.find((item) => item.id === id);
@@ -36,6 +34,21 @@
 
   function getVotes(plan) {
     return (plan.votes || 0) + (voteAdjustments[plan.id] || 0);
+  }
+
+  function getTimelinePosition(plan) {
+    const timelineStart = 9 * 60;
+    const timelineEnd = 18 * 60;
+    const parseTime = (value) => {
+      const [hours, minutes] = value.split(":").map(Number);
+      return hours * 60 + minutes;
+    };
+    const start = Math.max(parseTime(plan.start), timelineStart);
+    const end = Math.min(parseTime(plan.end), timelineEnd);
+    const total = timelineEnd - timelineStart;
+    const left = ((start - timelineStart) / total) * 100;
+    const width = ((Math.max(end - start, 15)) / total) * 100;
+    return [`${left}%`, `${width}%`];
   }
 
   function createPlanBlock(plan, options = {}) {
@@ -47,7 +60,7 @@
     ].filter(Boolean);
     block.className = classes.join(" ");
     block.dataset.planId = plan.id;
-    const position = positions[plan.id] || ["10%", "25%"];
+    const position = getTimelinePosition(plan);
     block.style.left = position[0];
     block.style.width = position[1];
 
@@ -91,6 +104,7 @@
 
     const confirmedIds = ["plan-market", "plan-cafe", selection.museum];
     if (selection.lunch) confirmedIds.push(selection.lunch);
+    if (selection.afternoon) confirmedIds.push(selection.afternoon);
     const confirmedPlans = confirmedIds
       .map((id) => findPlan(id))
       .filter(Boolean)
