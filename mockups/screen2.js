@@ -10,6 +10,7 @@
   const voteAdjustments = {};
   const votedPlans = new Set();
   const aiSuggestionStates = {};
+  let activePopover = null;
 
   const groups = [
     {
@@ -53,18 +54,99 @@
     return [`${left}%`, `${width}%`];
   }
 
+  function getPlanKind(plan) {
+    if (plan.proposalType === "gap") return "AI提案 / 空き時間";
+    if (plan.type === "option") return "競合候補 / 投票中";
+    return "確定予定";
+  }
+
+  function closePopover() {
+    if (!activePopover) return;
+    activePopover.block.setAttribute("aria-expanded", "false");
+    activePopover.popover.remove();
+    activePopover = null;
+  }
+
+  function showPopover(block, plan) {
+    closePopover();
+    const track = block.closest(".time-track");
+    if (!track) return;
+
+    const popover = document.createElement("div");
+    popover.className = "schedule-popover";
+    popover.setAttribute("role", "dialog");
+    popover.setAttribute("aria-label", `${plan.title}の予定詳細`);
+
+    const kind = document.createElement("span");
+    kind.className = `schedule-popover-kind${plan.proposalType === "gap" ? " ai" : plan.type === "option" ? " conflict" : ""}`;
+    kind.textContent = getPlanKind(plan);
+    popover.appendChild(kind);
+
+    const title = document.createElement("h4");
+    title.textContent = plan.title;
+    popover.appendChild(title);
+
+    const time = document.createElement("p");
+    time.textContent = `日時：${plan.time}`;
+    popover.appendChild(time);
+
+    const location = document.createElement("p");
+    location.textContent = `場所：${plan.location || "指定なし"}`;
+    popover.appendChild(location);
+
+    if (plan.aiReason) {
+      const reason = document.createElement("p");
+      reason.textContent = `理由：${plan.aiReason}`;
+      popover.appendChild(reason);
+    }
+    if (plan.noteId) {
+      const link = document.createElement("a");
+      link.href = `screen1.html#${plan.noteId}`;
+      link.textContent = "付箋を見る ↗";
+      popover.appendChild(link);
+    }
+
+    const close = document.createElement("button");
+    close.type = "button";
+    close.className = "schedule-popover-close";
+    close.setAttribute("aria-label", "予定詳細を閉じる");
+    close.textContent = "×";
+    close.addEventListener("click", closePopover);
+    popover.appendChild(close);
+
+    track.appendChild(popover);
+    const trackWidth = track.clientWidth;
+    const popoverWidth = Math.min(260, Math.max(180, trackWidth - 16));
+    popover.style.width = `${popoverWidth}px`;
+    const left = Math.min(Math.max(8, block.offsetLeft), trackWidth - popoverWidth - 8);
+    const popoverHeight = popover.offsetHeight;
+    const belowTop = block.offsetTop + block.offsetHeight + 8;
+    const aboveTop = block.offsetTop - popoverHeight - 8;
+    const top = belowTop + popoverHeight <= track.clientHeight - 8
+      ? belowTop
+      : Math.max(8, aboveTop);
+    popover.style.left = `${left}px`;
+    popover.style.top = `${top}px`;
+    block.setAttribute("aria-expanded", "true");
+    activePopover = { block, popover };
+  }
+
   function createPlanBlock(plan, options = {}) {
     const block = document.createElement("div");
+    const duration = parseTime(plan.end) - parseTime(plan.start);
     const classes = [
       "schedule-block",
       plan.type === "option" ? "option" : plan.status === "draft" ? "draft" : "",
       plan.proposalType === "gap" ? "ai-suggestion" : "",
-      parseTime(plan.end) - parseTime(plan.start) <= 90 ? "compact" : "",
+      duration <= 90 ? "compact" : "",
+      duration <= 30 ? "narrow" : "",
       options.rejected ? "rejected" : ""
     ].filter(Boolean);
     block.className = classes.join(" ");
     block.dataset.planId = plan.id;
     block.title = plan.title;
+    block.tabIndex = 0;
+    block.setAttribute("aria-expanded", "false");
     const position = getTimelinePosition(plan);
     block.style.left = position[0];
     block.style.width = position[1];
@@ -74,6 +156,13 @@
       status.className = "tag held";
       status.textContent = "不採用";
       block.appendChild(status);
+    }
+    if (duration <= 30) {
+      const marker = document.createElement("span");
+      marker.className = "schedule-marker";
+      marker.setAttribute("aria-hidden", "true");
+      marker.textContent = plan.proposalType === "gap" ? "AI" : plan.type === "option" ? "候" : "確";
+      block.appendChild(marker);
     }
     const title = document.createElement("h3");
     title.className = "schedule-title";
@@ -102,6 +191,20 @@
       reason.textContent = `AIが提案した理由：${plan.aiReason}`;
       block.appendChild(reason);
     }
+    block.addEventListener("mouseenter", () => showPopover(block, plan));
+    block.addEventListener("focus", () => showPopover(block, plan));
+    block.addEventListener("click", (event) => {
+      if (event.target.closest("a")) return;
+      showPopover(block, plan);
+    });
+    block.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        showPopover(block, plan);
+      } else if (event.key === "Escape") {
+        closePopover();
+      }
+    });
     return block;
   }
 
@@ -213,6 +316,7 @@
   }
 
   function renderPlans() {
+    closePopover();
     rows.innerHTML = "";
     rows.appendChild(createConfirmedRow());
     groups.forEach((group) => {
@@ -317,6 +421,15 @@
       button.addEventListener("click", () => window.alert("復元前の確認画面です。実際の復元は行いません（モックアップ）。"));
     });
   }
+
+  document.addEventListener("pointerdown", (event) => {
+    if (activePopover && !activePopover.popover.contains(event.target) && !activePopover.block.contains(event.target)) {
+      closePopover();
+    }
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") closePopover();
+  });
 
   renderPlans();
   bindPlanInteractions();
