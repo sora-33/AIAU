@@ -368,6 +368,9 @@ export function PlanPage({ userId }: { userId: string }) {
             <span className="plan-legend-item">
               <i className="plan-legend-swatch ai" />競合なし / AI提案
             </span>
+            <span className="plan-legend-item">
+              <i className="plan-legend-swatch travel" />移動時間 / AI概算
+            </span>
           </div>
 
           {!activeSlotGroup ? (
@@ -720,9 +723,11 @@ function SlotOptionBlock({
             ? '採用済み'
             : '不採用'
           : isSoleOption
-            ? option.note_id
-              ? `${kindLabel(option.kind)}の予定`
-              : 'AIが空き時間に提案'
+            ? option.kind === 'travel'
+              ? '移動時間'
+              : option.note_id
+                ? `${kindLabel(option.kind)}の予定`
+                : 'AIが空き時間に提案'
             : `競合${groupLabel(groupIndex)}の候補 ${lane + 1}/${group.entries.length}`
       }
       rejected={slotIsConfirmed && !isConfirmedOption}
@@ -734,7 +739,9 @@ function SlotOptionBlock({
       {previewMode ? (
         <span className="schedule-reason">履歴には投票数が保存されていません</span>
       ) : isSoleOption ? (
-        <span className="schedule-reason">時間が競合していないため、投票せずに反映されます</span>
+        option.kind === 'travel' ? null : (
+          <span className="schedule-reason">時間が競合していないため、投票せずに反映されます</span>
+        )
       ) : slotIsConfirmed ? (
         <span className="schedule-reason">
           {isConfirmedOption ? 'この案が採用されています' : '別の案が採用されています'}
@@ -787,7 +794,7 @@ type ScheduleBlockProps = {
   children?: ReactNode
 }
 
-function ScheduleBlock({
+export function ScheduleBlock({
   option,
   scale,
   timeZone,
@@ -799,19 +806,26 @@ function ScheduleBlock({
   children,
 }: ScheduleBlockProps) {
   const metadata = optionMetadata(option)
+  const periodLabel = option.kind === 'all_day' ? '終日予定' : formatTimeRange(option.start_at, option.end_at, timeZone)
+  const metadataText = option.kind === 'travel' ? metadata.map((item) => item.value).join(' · ') : metadata[0]?.value
 
   return (
     <article
-      className={`schedule-block ${variant}${rejected ? ' rejected' : ''}`}
+      aria-label={`${originLabel}: ${option.title}, ${periodLabel}`}
+      className={`schedule-block ${variant}${option.kind === 'travel' ? ' travel-block' : ''}${rejected ? ' rejected' : ''}`}
       style={{ gridColumn: timelineGridColumn(option, scale), '--group-accent': accent } as CSSProperties}
     >
       <span className="schedule-origin">{originLabel}</span>
       <h3 className="schedule-title">{option.title}</h3>
       <p className="schedule-meta">
-        {option.kind === 'all_day' ? '終日予定' : formatTimeRange(option.start_at, option.end_at, timeZone)}
-        {metadata[0] ? ` · ${metadata[0].value}` : ''}
+        {periodLabel}
+        {metadataText ? ` · ${metadataText}` : ''}
       </p>
-      {option.reason && <span className="schedule-reason">{option.reason}</span>}
+      {option.kind === 'travel' ? (
+        <span className="schedule-reason">移動時間はAIによる概算です。実際の時刻表や運行状況をご確認ください。</span>
+      ) : (
+        option.reason && <span className="schedule-reason">{option.reason}</span>
+      )}
       {option.note_id && (
         <Link className="schedule-note" to={`/trips/${tripId}/ideas#${encodeURIComponent(option.note_id)}`}>
           元の付箋を見る ↗
@@ -1236,6 +1250,13 @@ function groupVersionsByDate(versions: PlanVersion[], timeZone: string) {
 function optionMetadata(option: PlanOption): Array<{ label: string; value: string }> {
   if (!isRecord(option.attrs)) return []
   const details: Array<{ label: string; value: string }> = []
+  if (option.kind === 'travel') {
+    const mode = scalarText(option.attrs.mode)
+    const duration = scalarText(option.attrs.duration_minutes)
+    if (mode) details.push({ label: '移動手段', value: travelModeLabel(mode) })
+    if (duration) details.push({ label: '移動時間', value: `${duration}分（概算）` })
+    return details
+  }
   const location = scalarText(option.attrs.address) ?? scalarText(option.attrs.location)
   const duration = scalarText(option.attrs.duration)
   const timeHint = scalarText(option.attrs.time_hint)
@@ -1254,6 +1275,18 @@ function scalarText(value: unknown): string | null {
   if (typeof value === 'number' && Number.isFinite(value)) return String(value)
   if (typeof value === 'boolean') return value ? 'あり' : 'なし'
   return null
+}
+
+function travelModeLabel(mode: string): string {
+  const labels: Record<string, string> = {
+    walking: '徒歩',
+    transit: '公共交通',
+    train: '鉄道',
+    flight: '飛行機',
+    car: '車',
+    other: 'その他',
+  }
+  return labels[mode] ?? mode
 }
 
 function kindLabel(kind: PlanOption['kind']): string {
