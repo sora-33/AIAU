@@ -165,6 +165,91 @@ integration('Supabase integration', () => {
     ])
   }, 120_000)
 
+  openAIConfiguredIntegration('adds realistic travel time between distant activities', async () => {
+    const client = createClient<Database>(url!, key!)
+    const auth = await client.auth.signInAnonymously()
+    expect(auth.error).toBeNull()
+    const user = auth.data.user!
+
+    const tripResult = await client.rpc('create_trip', {
+      p_title: '長距離移動テスト',
+      p_nickname: 'owner',
+      p_starts_at: '2026-08-16T00:00:00Z',
+      p_ends_at: '2026-08-19T00:00:00Z',
+      p_timezone: 'Asia/Tokyo',
+      p_origin: '東京駅',
+      p_budget: 100_000,
+      p_currency: 'JPY',
+    })
+    expect(tripResult.error).toBeNull()
+    const trip = tripResult.data![0]
+
+    const notesResult = await client
+      .from('notes')
+      .insert([
+        {
+          trip_id: trip.trip_id,
+          title: '東京駅',
+          attrs: { address: '東京都千代田区丸の内', lat: 35.681236, lng: 139.767125, duration: 60 },
+          origin: 'user',
+          user_touched: true,
+          author_id: user.id,
+        },
+        {
+          trip_id: trip.trip_id,
+          title: '京都駅',
+          attrs: { address: '京都府京都市下京区', lat: 34.985849, lng: 135.758767, duration: 60 },
+          origin: 'user',
+          user_touched: true,
+          author_id: user.id,
+        },
+      ])
+      .select('id,title')
+    expect(notesResult.error).toBeNull()
+    expect(notesResult.data).toHaveLength(2)
+
+    const generateResult = await client.functions.invoke('generate-plan', {
+      body: {
+        trip_id: trip.trip_id,
+        plan_id: trip.plan_id,
+        expected_version: 0,
+        regenerate: false,
+        idempotency_key: crypto.randomUUID(),
+      },
+    })
+    expect(generateResult.error).toBeNull()
+
+    const slotsResult = await client
+      .from('plan_slots')
+      .select('id,start_at,end_at,plan_options!plan_options_slot_id_fkey(id,title,start_at,end_at,kind,note_id,attrs)')
+      .eq('plan_id', trip.plan_id)
+      .is('deleted_at', null)
+      .order('start_at')
+    expect(slotsResult.error).toBeNull()
+    const options = (slotsResult.data ?? []).flatMap((slot) => slot.plan_options ?? [])
+    expect(options.filter((option) => option.kind === 'activity')).toHaveLength(2)
+    const travelOptions = options.filter((option) => option.kind === 'travel')
+    expect(travelOptions.length).toBeGreaterThan(0)
+    expect(travelOptions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          note_id: null,
+          attrs: expect.objectContaining({
+            mode: expect.any(String),
+            duration_minutes: expect.any(Number),
+            distance_category: 'long_distance',
+            estimated: true,
+          }),
+        }),
+      ]),
+    )
+    expect(
+      travelOptions.some(
+        (option) => (Date.parse(option.end_at) - Date.parse(option.start_at)) / 60_000 >= 180,
+      ),
+    ).toBe(true)
+  }, 120_000)
+
   openAIConfiguredIntegration('keeps every wish of a chat, including competing meals, as its own note', async () => {
     const client = createClient<Database>(url!, key!)
     const auth = await client.auth.signInAnonymously()

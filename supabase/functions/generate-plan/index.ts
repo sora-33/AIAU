@@ -3,6 +3,7 @@ import { z } from 'npm:zod@4.4.3'
 import { mergeOverlappingSlots } from '../_shared/conflicts.ts'
 import { corsHeaders, errorResponse, jsonResponse } from '../_shared/http.ts'
 import { callOpenAIJson, OpenAIError, sha256 } from '../_shared/llm.ts'
+import { buildAlternativePlan, validateGeneratedPlan } from '../_shared/plan-validation.ts'
 import { generatedPlan } from '../_shared/schemas.ts'
 import { createServiceClient, requireUser } from '../_shared/supabase.ts'
 
@@ -60,7 +61,9 @@ Deno.serve(async (request) => {
     const inputHash = await sha256(
       JSON.stringify({
         trip: tripResult.data,
-        notes: notesResult.data.map((note) => note.id).sort(),
+        notes: [...notesResult.data]
+          .sort((left, right) => left.id.localeCompare(right.id))
+          .map((note) => ({ id: note.id, title: note.title, attrs: note.attrs, x: note.x, y: note.y })),
         busy: busyResult.data,
         version: body.expected_version,
       }),
@@ -106,30 +109,57 @@ Deno.serve(async (request) => {
       'Only travel or placeholder options may use a null note_id. Include every active note exactly once as an activity.',
       'Honor duration and time_hint from each note attrs, including exact requested clock times.',
       'Include at least one option in every slot. Respect the trip start, trip end, timezone, budget, and every busy interval.',
-      'Do not overlap slots or busy intervals. Ensure every end_at is after start_at.',
+      'Do not overlap slots or busy intervals. Ensure every end_at is after start_at and every option fits inside its slot.',
       'When ideas compete for the same time range, return them as multiple options inside one slot so members can vote, never as separate slots.',
       'Activities that happen one after another belong in separate slots, even when they are close in time. A slot with several options always means members must pick one of them.',
-      'Notes that cannot all happen belong in one slot as competing options, for example several lunch wishes such as curry and yakiniku, or a food wish and a named restaurant serving that food.',
+      'Notes that cannot all happen belong in one slot as competing options, for example several lunch wishes, a food wish and a named restaurant serving it, or geographically distant destinations that cannot fit within the trip.',
+      'Build a realistic door-to-door itinerary from the trip origin. Never place activities at different locations back-to-back without travel time.',
+      'Between consecutive activity groups at different locations, add one separate single-option travel slot with kind travel and note_id null.',
+      'Each travel option attrs must be {"from_note_id":"previous note UUID or null for trip origin","to_note_id":"next note UUID","mode":"walking|transit|train|flight|car|other","duration_minutes":number,"distance_category":"local|regional|long_distance|international","estimated":true}.',
+      'The travel option start_at and end_at must equal its estimated duration. Use at least 10 minutes for local, 45 for regional, 120 for long_distance, and 180 for international travel.',
+      'Use local only for the same venue or genuinely nearby places. Use regional with at least 45 minutes for different locations in the same broad region when precise coordinates are unavailable.',
+      'Use conservative door-to-door estimates including transfers, station or airport access, waiting, boarding, and arrival procedures. Do not invent exact timetables.',
+      'Tokyo to Kyoto normally needs at least 180 minutes, Kyoto to Hokkaido at least 240 minutes, and Hokkaido to Korea at least 300 minutes door-to-door.',
+      'If all notes plus realistic travel cannot fit inside the trip window, make incompatible activities competing options instead of compressing travel or creating an impossible itinerary.',
+      'Set each travel title to a concise Japanese label such as 移動: 東京駅 → 京都 and explain that the duration is an AI estimate in reason.',
+      'All user-facing title and reason values must be written in Japanese.',
+      'If correction_context is present, repair every listed validation error and return the complete corrected plan.',
     ].join(' ')
-    let parsed: z.infer<typeof generatedPlan>
+    let parsed: z.infer<typeof generatedPlan> | null = null
+    let validationErrors: string[] = []
     try {
-      parsed = generatedPlan.parse(await callOpenAIJson(system, input))
+      for (let attempt = 0; attempt < 2; attempt += 1) {
+        const requestInput =
+          attempt === 0
+            ? input
+            : {
+                ...input,
+                correction_context: {
+                  validation_errors: validationErrors,
+                  previous_plan: parsed,
+                },
+              }
+        parsed = generatedPlan.parse(await callOpenAIJson(system, requestInput))
+        validationErrors = validateGeneratedPlan(parsed.slots, input)
+        if (validationErrors.length === 0) break
+      }
     } catch (error) {
       if (error instanceof OpenAIError) throw error
       if (error instanceof z.ZodError) throw new OpenAIError('OPENAI_RESPONSE_INVALID', 502)
       throw error
     }
-
-    const noteIds = new Set(notesResult.data.map((note) => note.id))
-    for (const slot of parsed.slots) {
-      for (const option of slot.options) {
-        if (option.note_id && !noteIds.has(option.note_id)) {
-          throw new OpenAIError('OPENAI_RESPONSE_INVALID', 502)
-        }
-        if (option.kind === 'activity' && !option.note_id) {
-          throw new OpenAIError('OPENAI_RESPONSE_INVALID', 502)
+    if (parsed && validationErrors.length > 0) {
+      const alternativeSlots = buildAlternativePlan(parsed.slots, input)
+      if (alternativeSlots) {
+        const alternativeErrors = validateGeneratedPlan(alternativeSlots, input)
+        if (alternativeErrors.length === 0) {
+          parsed = { slots: alternativeSlots }
+          validationErrors = []
         }
       }
+    }
+    if (!parsed || validationErrors.length > 0) {
+      throw new OpenAIError('OPENAI_RESPONSE_INVALID', 502)
     }
 
     // OpenAIが重なる予定を別slotへ返した場合も、同じ時間帯は1slotへまとめて投票できる競合候補にする。

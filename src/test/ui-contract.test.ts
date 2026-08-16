@@ -5,7 +5,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { AppShell } from '@/components/layout/app-shell'
 import { buildInviteUrl, readInviteTokenFromSearch } from '@/lib/invite-link'
 import { HomePage } from '@/pages/home-page'
+import { ScheduleBlock } from '@/pages/plan-page'
 import { getCalendarFeed } from '@/repositories/calendar.repository'
+import type { PlanOption } from '@/types/domain'
 import { extractNotes } from '@/services/ai.service'
 import {
   createInvite,
@@ -91,6 +93,46 @@ describe('UI route contract', () => {
     expect(url).toBe('https://tabiami.example/?invite=invite%20token%2F1')
     expect(readInviteTokenFromSearch(new URL(url).search)).toBe('invite token/1')
     expect(readInviteTokenFromSearch('')).toBeNull()
+  })
+
+  it('renders estimated travel as a non-votable accessible schedule block', () => {
+    const startAt = '2026-08-16T10:00:00+09:00'
+    const endAt = '2026-08-16T13:00:00+09:00'
+    const option = {
+      id: '11111111-1111-4111-8111-111111111111',
+      slot_id: '22222222-2222-4222-8222-222222222222',
+      note_id: null,
+      title: '移動: 東京駅 → 京都駅',
+      start_at: startAt,
+      end_at: endAt,
+      kind: 'travel',
+      attrs: { mode: 'train', duration_minutes: 180, estimated: true },
+      reason: null,
+      user_touched: false,
+      revision: 1,
+      created_at: startAt,
+      updated_at: startAt,
+      deleted_at: null,
+    } as PlanOption
+    const start = Date.parse('2026-08-16T09:00:00+09:00')
+    const end = Date.parse('2026-08-16T14:00:00+09:00')
+    const markup = renderAt(
+      '/',
+      createElement(ScheduleBlock, {
+        option,
+        scale: { start, end, hours: [start, start + 3_600_000, start + 7_200_000, start + 10_800_000, start + 14_400_000] },
+        timeZone: 'Asia/Tokyo',
+        tripId: 'trip-id',
+        variant: 'ai-suggestion',
+        originLabel: '移動時間',
+      }),
+    )
+
+    expect(markup).toContain('aria-label="移動時間: 移動: 東京駅 → 京都駅, 10:00–13:00"')
+    expect(markup).toContain('class="schedule-block ai-suggestion travel-block"')
+    expect(markup).toContain('10:00–13:00 · 鉄道 · 180分（概算）')
+    expect(markup).toContain('移動時間はAIによる概算です。実際の時刻表や運行状況をご確認ください。')
+    expect(markup).not.toContain('この案に投票')
   })
 })
 
